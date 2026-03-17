@@ -22,7 +22,10 @@ const securityHeaders = [
       "worker-src 'self' blob:",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
-      "connect-src 'self'",
+      // blob: is required — THREE.js FileLoader calls fetch('blob:...') to read
+      // the object URL created from the decrypted model ArrayBuffer.
+      // Without it the browser blocks the request with "Failed to fetch".
+      "connect-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join("; "),
   },
