@@ -39,13 +39,13 @@ const Scene = () => {
         antialias: true,
       });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      // Cap at 2 — a ratio of 3-4 triples render work with no visible benefit
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1;
       canvasDiv.current.appendChild(renderer.domElement);
 
       const camera = new THREE.PerspectiveCamera(14.5, aspect, 0.1, 1000);
-      camera.position.z = 10;
       camera.position.set(0, 13.1, 24.7);
       camera.zoom = 1.1;
       camera.updateProjectionMatrix();
@@ -83,15 +83,18 @@ const Scene = () => {
             }, 2500);
           });
 
-          window.addEventListener("resize", () =>
-            handleResize(renderer, camera, canvasDiv, character),
-          );
+          // Store the handler reference so the cleanup can remove the exact same fn
+          const onResize = () => handleResize(renderer, camera, canvasDiv, character);
+          window.addEventListener("resize", onResize);
+          // Store for cleanup
+          (renderer as THREE.WebGLRenderer & { __onResize?: () => void }).__onResize = onResize;
         }
       });
 
       let mouse = { x: 0, y: 0 },
         interpolation = { x: 0.1, y: 0.2 };
 
+      // Named handlers so cleanup can remove the exact same references
       const onMouseMove = (event: MouseEvent) => {
         handleMouseMove(event, (x, y) => (mouse = { x, y }));
       };
@@ -112,9 +115,8 @@ const Scene = () => {
         });
       };
 
-      document.addEventListener("mousemove", (event) => {
-        onMouseMove(event);
-      });
+      // Use the named handler directly — no wrapping arrow fn
+      document.addEventListener("mousemove", onMouseMove);
       const landingDiv = document.getElementById("landingDiv");
       if (landingDiv) {
         landingDiv.addEventListener("touchstart", onTouchStart);
@@ -144,18 +146,33 @@ const Scene = () => {
 
       return () => {
         clearTimeout(debounce);
+
+        // Dispose all Three.js GPU resources to prevent memory leaks
+        scene.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.geometry?.dispose();
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((m) => m.dispose());
+            } else {
+              (mesh.material as THREE.Material)?.dispose();
+            }
+          }
+        });
         scene.clear();
         renderer.dispose();
-        window.removeEventListener("resize", () =>
-          handleResize(renderer, camera, canvasDiv, character!),
-        );
-        if (canvasDiv.current) {
-          canvasDiv.current.removeChild(renderer.domElement);
-        }
+
+        // Remove the exact same resize handler reference that was registered
+        const onResize = (renderer as THREE.WebGLRenderer & { __onResize?: () => void }).__onResize;
+        if (onResize) window.removeEventListener("resize", onResize);
+
+        document.removeEventListener("mousemove", onMouseMove);
         if (landingDiv) {
-          document.removeEventListener("mousemove", onMouseMove);
           landingDiv.removeEventListener("touchstart", onTouchStart);
           landingDiv.removeEventListener("touchend", onTouchEnd);
+        }
+        if (canvasDiv.current) {
+          canvasDiv.current.removeChild(renderer.domElement);
         }
       };
     }

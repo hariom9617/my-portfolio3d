@@ -8,6 +8,8 @@ import HoverLinks from "./HoverLinks";
 const SocialIcons = () => {
   useEffect(() => {
     const social = document.getElementById("social") as HTMLElement;
+    const rafIds: number[] = [];
+    const mouseMoveHandlers: Array<(e: MouseEvent) => void> = [];
 
     social.querySelectorAll("span").forEach((item) => {
       const elem = item as HTMLElement;
@@ -19,20 +21,20 @@ const SocialIcons = () => {
       let currentX = 0;
       let currentY = 0;
 
+      let rafId: number;
       const updatePosition = () => {
         currentX += (mouseX - currentX) * 0.1;
         currentY += (mouseY - currentY) * 0.1;
-
         link.style.setProperty("--siLeft", `${currentX}px`);
         link.style.setProperty("--siTop", `${currentY}px`);
-
-        requestAnimationFrame(updatePosition);
+        rafId = requestAnimationFrame(updatePosition);
       };
+      rafId = requestAnimationFrame(updatePosition);
+      rafIds.push(rafId as unknown as number);
 
       const onMouseMove = (e: MouseEvent) => {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-
         if (x < 40 && x > 10 && y < 40 && y > 5) {
           mouseX = x;
           mouseY = y;
@@ -42,13 +44,19 @@ const SocialIcons = () => {
         }
       };
 
+      // Add to document (correct target) and track for removal
       document.addEventListener("mousemove", onMouseMove);
-      updatePosition();
-
-      return () => {
-        elem.removeEventListener("mousemove", onMouseMove);
-      };
+      mouseMoveHandlers.push(onMouseMove);
     });
+
+    return () => {
+      // Cancel every RAF loop started above
+      rafIds.forEach((id) => cancelAnimationFrame(id));
+      // Remove every mousemove listener added to document
+      mouseMoveHandlers.forEach((handler) =>
+        document.removeEventListener("mousemove", handler)
+      );
+    };
   }, []);
 
   return (
@@ -93,22 +101,22 @@ const SocialIcons = () => {
           id="social"
         >
           <span className="si-span">
-            <a href="https://github.com/hariom9617" target="_blank" className="si-link">
+            <a href="https://github.com/hariom9617" target="_blank" rel="noopener noreferrer" className="si-link">
               <FaGithub />
             </a>
           </span>
           <span className="si-span">
-            <a href="https://www.linkedin.com/in/hariom-patil" target="_blank" className="si-link">
+            <a href="https://www.linkedin.com/in/hariom-patil" target="_blank" rel="noopener noreferrer" className="si-link">
               <FaLinkedinIn />
             </a>
           </span>
           <span className="si-span">
-            <a href="https://x.com/r1xhariomog" target="_blank" className="si-link">
+            <a href="https://x.com/r1xhariomog" target="_blank" rel="noopener noreferrer" className="si-link">
               <FaXTwitter />
             </a>
           </span>
           <span className="si-span">
-            <a href="https://www.instagram.com/hariom_gurjar96" target="_blank" className="si-link">
+            <a href="https://www.instagram.com/hariom_gurjar96" target="_blank" rel="noopener noreferrer" className="si-link">
               <FaInstagram />
             </a>
           </span>

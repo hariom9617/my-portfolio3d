@@ -19,9 +19,11 @@ const setCharacter = (
   const loadCharacter = () => {
     return new Promise<GLTF | null>(async (resolve, reject) => {
       try {
+        const modelKey = process.env.NEXT_PUBLIC_MODEL_KEY;
+        if (!modelKey) throw new Error("NEXT_PUBLIC_MODEL_KEY is not set");
         const encryptedBlob = await decryptFile(
           "/models/character.enc?v=2",
-          "MyCharacter12"
+          modelKey
         );
         const blobUrl = URL.createObjectURL(new Blob([encryptedBlob]));
 

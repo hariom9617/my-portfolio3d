@@ -11,9 +11,18 @@ export function setCharTimeline(
   if (typeof window === "undefined") return;
 
   let intensity: number = 0;
-  setInterval(() => {
+  // Store the interval id so the screen-flicker effect can be stopped
+  // when the ScrollTrigger that owns it is killed (e.g. on resize).
+  const intensityInterval = setInterval(() => {
     intensity = Math.random();
   }, 200);
+
+  // Attach the cleanup to the GSAP context so it fires when ScrollTriggers
+  // created in this call are killed (resize handler calls ScrollTrigger.kill).
+  ScrollTrigger.create({
+    id: "__intensityCleanup",
+    onKill: () => clearInterval(intensityInterval),
+  });
 
   const tl1 = gsap.timeline({
     scrollTrigger: {

@@ -5,20 +5,50 @@ import { ArrowRight, Mail, MapPin, Github, Linkedin, Twitter } from "lucide-reac
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({});
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    // Enforce max-length constraints to prevent oversized payloads
+    const maxLengths: Record<string, number> = { name: 100, email: 254, message: 2000 };
+    if (value.length > maxLengths[name]) return;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear field error on change
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const validate = () => {
+    const next: typeof errors = {};
+    if (!form.name.trim()) next.name = "Name is required.";
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) next.email = "Email is required.";
+    else if (!emailRe.test(form.email)) next.email = "Please enter a valid email.";
+    if (!form.message.trim()) next.message = "Message is required.";
+    else if (form.message.trim().length < 10) next.message = "Message must be at least 10 characters.";
+    return next;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const fieldErrors = validate();
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
     setStatus("sending");
-    // Replace with your actual submit logic / API call
-    await new Promise((r) => setTimeout(r, 1200));
-    setStatus("sent");
+    try {
+      // Replace with your actual API call, e.g.:
+      // await fetch("/api/contact", { method: "POST", body: JSON.stringify(form) });
+      await new Promise((r) => setTimeout(r, 1200));
+      setStatus("sent");
+    } catch {
+      setStatus("error");
+    }
   };
 
   return (
@@ -221,7 +251,11 @@ export default function Contact() {
                 }}
               />
 
-              <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", gap: "1.1rem" }}
+              >
 
                 {/* Name */}
                 <div>
@@ -231,10 +265,12 @@ export default function Contact() {
                   <input
                     id="name" name="name" type="text" placeholder="John Doe"
                     value={form.name} onChange={handleChange}
-                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(13,204,242,0.2)", borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    autoComplete="name"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${errors.name ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"}`, borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                     onFocus={(e) => { e.target.style.borderColor = "#0dccf2"; e.target.style.background = "rgba(13,204,242,0.07)"; e.target.style.boxShadow = "0 0 12px rgba(13,204,242,0.15)"; }}
-                    onBlur={(e) => { e.target.style.borderColor = "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
+                    onBlur={(e) => { e.target.style.borderColor = errors.name ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
                   />
+                  {errors.name && <p style={{ color: "rgba(255,100,100,0.9)", fontSize: "11px", marginTop: "4px" }}>{errors.name}</p>}
                 </div>
 
                 {/* Email */}
@@ -245,10 +281,12 @@ export default function Contact() {
                   <input
                     id="email" name="email" type="email" placeholder="john@example.com"
                     value={form.email} onChange={handleChange}
-                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(13,204,242,0.2)", borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    autoComplete="email"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${errors.email ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"}`, borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                     onFocus={(e) => { e.target.style.borderColor = "#0dccf2"; e.target.style.background = "rgba(13,204,242,0.07)"; e.target.style.boxShadow = "0 0 12px rgba(13,204,242,0.15)"; }}
-                    onBlur={(e) => { e.target.style.borderColor = "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
+                    onBlur={(e) => { e.target.style.borderColor = errors.email ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
                   />
+                  {errors.email && <p style={{ color: "rgba(255,100,100,0.9)", fontSize: "11px", marginTop: "4px" }}>{errors.email}</p>}
                 </div>
 
                 {/* Message */}
@@ -259,15 +297,16 @@ export default function Contact() {
                   <textarea
                     id="message" name="message" rows={4} placeholder="Let's build something amazing..."
                     value={form.message} onChange={handleChange}
-                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(13,204,242,0.2)", borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${errors.message ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"}`, borderRadius: "0.6rem", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                     onFocus={(e) => { e.target.style.borderColor = "#0dccf2"; e.target.style.background = "rgba(13,204,242,0.07)"; e.target.style.boxShadow = "0 0 12px rgba(13,204,242,0.15)"; }}
-                    onBlur={(e) => { e.target.style.borderColor = "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
+                    onBlur={(e) => { e.target.style.borderColor = errors.message ? "rgba(255,80,80,0.6)" : "rgba(13,204,242,0.2)"; e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.boxShadow = "none"; }}
                   />
+                  {errors.message && <p style={{ color: "rgba(255,100,100,0.9)", fontSize: "11px", marginTop: "4px" }}>{errors.message}</p>}
                 </div>
 
                 {/* Submit */}
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={status === "sending" || status === "sent"}
                   style={{
                     width: "100%", background: "#0dccf2", border: "none",
@@ -282,11 +321,11 @@ export default function Contact() {
                   onMouseEnter={(e) => { if (status === "idle") { (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 30px rgba(13,204,242,0.6)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 20px rgba(13,204,242,0.3)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
                 >
-                  {status === "sent" ? "Message Sent ✓" : status === "sending" ? "Sending..." : (
+                  {status === "sent" ? "Message Sent ✓" : status === "error" ? "Failed — Try Again" : status === "sending" ? "Sending..." : (
                     <><span>Send Message</span><ArrowRight size={15} /></>
                   )}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
