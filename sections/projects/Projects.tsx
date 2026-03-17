@@ -14,10 +14,10 @@ const projects = [
     video: "",
   },
   {
-    title: "Creator Insights",
-    category: "AI Analytics Dashboard",
-    tools: "React, Node.js, MongoDB, AI APIs",
-    image: "/images/creator-insights.png",
+    title: "Hotel Management",
+    category: "Management System",
+    tools: "React, Node.js, MongoDB",
+    image: "/images/hotel-management.png",
     link: "",
     video: "",
   },
@@ -38,18 +38,18 @@ const projects = [
     video: "",
   },
   {
-    title: "Hotel Management",
-    category: "Management System",
-    tools: "React, Node.js, MongoDB",
-    image: "/images/hotel.png",
-    link: "",
-    video: "",
-  },
-  {
     title: "3D Developer Portfolio",
     category: "Interactive Portfolio",
     tools: "Next.js, Three.js, GSAP, Framer Motion",
     image: "/images/portfolio3d.png",
+    link: "",
+    video: "",
+  },
+  {
+    title: "Creator Insights",
+    category: "AI Analytics Dashboard",
+    tools: "React, Node.js, MongoDB, AI APIs",
+    image: "/images/creator-insights.png",
     link: "",
     video: "",
   },
@@ -59,11 +59,10 @@ const featuredProject = projects[0]; // ReplyZen (your strongest project)
 
 const gridProjects = [
   {
-    title: "Creator Insights",
-    description:
-      "AI-powered analytics dashboard for YouTube and Instagram creators, providing deep insights into engagement and audience behavior.",
-    tags: ["React", "Node.js", "AI"],
-    image: "/images/creator-insights.png",
+    title: "ReplyZen",
+    category: "Instagram Automation SaaS",
+    tags: ["React", "Node.js", "Express", "MongoDB", "Razorpay"],
+    image: "/images/replyzen.png",
     link: "",
     github: "",
   },
@@ -90,7 +89,7 @@ const gridProjects = [
     description:
       "System for managing hotel bookings, room availability, and customer data with an admin dashboard.",
     tags: ["React", "Node.js", "MongoDB"],
-    image: "/images/hotel.png",
+    image: "/images/hotel-management.png",
     link: "",
     github: "",
   },
@@ -152,13 +151,15 @@ export default function Projects() {
       >
         {/* ── Section Header ── */}
         <div className="mb-16">
-          <h2 className="
+          <h2
+            className="
             text-[70px] leading-none font-black tracking-tighter mb-4
             bg-gradient-to-r from-white to-slate-500
             bg-clip-text [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]
             max-[1400px]:text-[50px]
             max-[900px]:text-[40px]
-          ">
+          "
+          >
             My{" "}
             <span className="text-[var(--accentColor)] [-webkit-text-fill-color:var(--accentColor)]">
               Work
@@ -172,18 +173,21 @@ export default function Projects() {
 
         {/* ── Featured Project ── */}
         <section className="mb-24">
-          <div className="
+          <div
+            className="
             glass rounded-2xl overflow-hidden group
             border border-white/5
             hover:border-[var(--accentColor)]/30
             transition-all duration-500 shadow-2xl
-          ">
+          "
+          >
             <div className="flex flex-col lg:flex-row">
-
               {/* Image */}
               <div
                 className="lg:w-3/5 relative overflow-hidden h-[300px] lg:h-auto cursor-pointer"
-                onMouseEnter={() => handleMouseEnter("featured", featuredProject.video)}
+                onMouseEnter={() =>
+                  handleMouseEnter("featured", featuredProject.video)
+                }
                 onMouseLeave={handleMouseLeave}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
@@ -195,7 +199,10 @@ export default function Projects() {
                 {activeVideo === "featured" && (
                   <video
                     src={videoSrc}
-                    autoPlay muted playsInline loop
+                    autoPlay
+                    muted
+                    playsInline
+                    loop
                     className="absolute inset-0 w-full h-full object-cover z-[5]"
                   />
                 )}
@@ -204,12 +211,14 @@ export default function Projects() {
               {/* Content */}
               <div className="lg:w-2/5 p-8 lg:p-12 flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-6">
-                  <span className="
+                  <span
+                    className="
                     px-3 py-1 rounded-full
                     bg-[var(--accentColor)]/20 text-[var(--accentColor)]
                     text-[10px] font-bold uppercase tracking-widest
                     border border-[var(--accentColor)]/30
-                  ">
+                  "
+                  >
                     Primary Project
                   </span>
                 </div>
@@ -223,11 +232,14 @@ export default function Projects() {
                 </p>
                 <div className="flex flex-wrap gap-2 mb-10">
                   {["Angular", "Next.js", "NestJS", "MongoDB"].map((tool) => (
-                    <span key={tool} className="
+                    <span
+                      key={tool}
+                      className="
                       px-3 py-1 rounded-md
                       bg-white/5 border border-white/10
                       text-xs font-medium text-white/70
-                    ">
+                    "
+                    >
                       {tool}
                     </span>
                   ))}
@@ -296,7 +308,10 @@ export default function Projects() {
                     {activeVideo === `grid-${i}` && (
                       <video
                         src={videoSrc}
-                        autoPlay muted playsInline loop
+                        autoPlay
+                        muted
+                        playsInline
+                        loop
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     )}
@@ -304,7 +319,9 @@ export default function Projects() {
                 </div>
               ) : (
                 <div className="w-full aspect-video rounded-lg mb-6 bg-white/5 border border-white/5 flex items-center justify-center">
-                  <span className="text-white/20 text-sm font-mono tracking-widest uppercase">Soon</span>
+                  <span className="text-white/20 text-sm font-mono tracking-widest uppercase">
+                    Soon
+                  </span>
                 </div>
               )}
 
@@ -364,17 +381,21 @@ export default function Projects() {
           ))}
 
           {/* CTA card */}
-          <div className="
+          <div
+            className="
             rounded-xl border border-dashed border-[var(--accentColor)]/30
             p-6 flex flex-col items-center justify-center text-center
             group cursor-pointer hover:bg-[var(--accentColor)]/5 transition-all
-          ">
-            <div className="
+          "
+          >
+            <div
+              className="
               w-16 h-16 rounded-full bg-[var(--accentColor)]/10
               flex items-center justify-center mb-4
               group-hover:scale-110 transition-transform
               text-[var(--accentColor)] text-3xl font-bold
-            ">
+            "
+            >
               +
             </div>
             <h4 className="text-xl font-bold mb-2">Build Together</h4>
@@ -409,10 +430,12 @@ export default function Projects() {
               shadow-lg hover:shadow-[var(--accentColor)]/10
             "
           >
-            <span className="
+            <span
+              className="
               text-sm font-bold tracking-widest uppercase
               text-white/70 group-hover:text-[var(--accentColor)] transition-colors
-            ">
+            "
+            >
               View All Projects
             </span>
             <ArrowRight
@@ -421,7 +444,6 @@ export default function Projects() {
             />
           </Link>
         </div>
-
       </div>
     </>
   );
