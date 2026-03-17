@@ -4,52 +4,18 @@
 
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollSmoother } from "gsap/all";
+import { SplitText } from "gsap/all";
 import { getSmoother } from "@/utils/smootherRef";
 import setSplitText from "@/engine/animations/splitText";
 
-// ScrollSmoother & SplitText are gsap-trial / gsap premium plugins.
-// They are imported lazily to avoid SSR errors.
-let ScrollSmoother: any;
-let SplitText: any;
-
-async function loadGsapPlugins() {
-  if (typeof window === "undefined") return;
-
-  if (!ScrollSmoother) {
-    try {
-      const mod = await import("gsap-trial/ScrollSmoother");
-      ScrollSmoother = mod.ScrollSmoother;
-    } catch {
-      // ScrollSmoother not available — graceful degradation
-      ScrollSmoother = null;
-    }
-  }
-
-  if (!SplitText) {
-    try {
-      const mod = await import("gsap-trial/SplitText");
-      SplitText = mod.SplitText;
-    } catch {
-      SplitText = null;
-    }
-  }
-}
+gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText);
 
 export async function initialFX() {
   if (typeof window === "undefined") return;
 
-  await loadGsapPlugins();
-
-  gsap.registerPlugin(ScrollTrigger);
-  if (ScrollSmoother) gsap.registerPlugin(ScrollSmoother);
-  if (SplitText) gsap.registerPlugin(SplitText);
-
   document.body.style.overflowY = "auto";
 
-  // Unpause ScrollSmoother using the singleton stored by Navbar.tsx.
-  // This is the single authoritative reference — Navbar calls setSmoother()
-  // immediately after ScrollSmoother.create(), so getSmoother() is always
-  // non-null by the time initialFX runs.
   const smoother = getSmoother();
   if (smoother) smoother.paused(false);
 
@@ -62,24 +28,7 @@ export async function initialFX() {
     delay: 1,
   });
 
-  // Kick off scroll-triggered paragraph and title reveals.
-  // setSplitText registers its own ScrollTrigger.refresh listener internally.
   void setSplitText();
-
-  if (!SplitText) {
-    // Graceful fallback: simple fade/slide for landing elements
-    gsap.fromTo(
-      [".landing-info h3", ".landing-intro h2", ".landing-intro h1"],
-      { opacity: 0, y: 80 },
-      { opacity: 1, y: 0, duration: 1.2, ease: "power3.inOut", stagger: 0.025, delay: 0.3 }
-    );
-    gsap.fromTo(
-      [".header", ".icons-section", ".nav-fade"],
-      { opacity: 0 },
-      { opacity: 1, duration: 1.2, ease: "power1.inOut", delay: 0.1 }
-    );
-    return;
-  }
 
   const landingText = new SplitText(
     [".landing-info h3", ".landing-intro h2", ".landing-intro h1"],
@@ -152,7 +101,10 @@ export async function initialFX() {
   LoopText(landingText4, landingText5);
 }
 
-function LoopText(Text1: any, Text2: any) {
+function LoopText(
+  Text1: InstanceType<typeof SplitText>,
+  Text2: InstanceType<typeof SplitText>
+) {
   const tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
   const delay = 4;
   const delay2 = delay * 2 + 1;
@@ -160,49 +112,24 @@ function LoopText(Text1: any, Text2: any) {
   tl.fromTo(
     Text2.chars,
     { opacity: 0, y: 80 },
-    {
-      opacity: 1,
-      duration: 1.2,
-      ease: "power3.inOut",
-      y: 0,
-      stagger: 0.1,
-      delay: delay,
-    },
+    { opacity: 1, duration: 1.2, ease: "power3.inOut", y: 0, stagger: 0.1, delay },
     0
   )
     .fromTo(
       Text1.chars,
       { y: 80 },
-      {
-        duration: 1.2,
-        ease: "power3.inOut",
-        y: 0,
-        stagger: 0.1,
-        delay: delay2,
-      },
+      { duration: 1.2, ease: "power3.inOut", y: 0, stagger: 0.1, delay: delay2 },
       1
     )
     .fromTo(
       Text1.chars,
       { y: 0 },
-      {
-        y: -80,
-        duration: 1.2,
-        ease: "power3.inOut",
-        stagger: 0.1,
-        delay: delay,
-      },
+      { y: -80, duration: 1.2, ease: "power3.inOut", stagger: 0.1, delay },
       0
     )
     .to(
       Text2.chars,
-      {
-        y: -80,
-        duration: 1.2,
-        ease: "power3.inOut",
-        stagger: 0.1,
-        delay: delay2,
-      },
+      { y: -80, duration: 1.2, ease: "power3.inOut", stagger: 0.1, delay: delay2 },
       1
     );
 }

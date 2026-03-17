@@ -1,4 +1,5 @@
-import { ScrollSmoother } from "gsap-trial/ScrollSmoother";
+// utils/smootherRef.ts
+import type { ScrollSmoother } from "gsap/all";
 
 let smoother: ScrollSmoother | null = null;
 

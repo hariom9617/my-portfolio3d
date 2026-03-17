@@ -3,27 +3,14 @@
 
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/all";
 
-let SplitTextClass: any = null;
-
-async function ensureSplitText() {
-  if (SplitTextClass) return SplitTextClass;
-  try {
-    const mod = await import("gsap-trial/SplitText");
-    SplitTextClass = mod.SplitText;
-    gsap.registerPlugin(SplitTextClass);
-  } catch {
-    SplitTextClass = null;
-  }
-  return SplitTextClass;
-}
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
 interface ParaElement extends HTMLElement {
   anim?: gsap.core.Animation;
-  split?: any;
+  split?: InstanceType<typeof SplitText>;
 }
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default async function setSplitText() {
   if (typeof window === "undefined") return;
@@ -31,9 +18,6 @@ export default async function setSplitText() {
   ScrollTrigger.config({ ignoreMobileResize: true });
 
   if (window.innerWidth < 900) return;
-
-  const SplitText = await ensureSplitText();
-  if (!SplitText) return;
 
   const paras: NodeListOf<ParaElement> = document.querySelectorAll(".para");
   const titles: NodeListOf<ParaElement> = document.querySelectorAll(".title");
@@ -101,6 +85,5 @@ export default async function setSplitText() {
     );
   });
 
-  // Wrap in void to suppress "Promise not assignable to void" TS error
   ScrollTrigger.addEventListener("refresh", () => { void setSplitText(); });
 }
