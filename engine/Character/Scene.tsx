@@ -76,8 +76,10 @@ const Scene = () => {
         .then((gltf) => {
           if (!gltf) {
             // env-var missing or model resolved null — still complete loading
-            // so the site doesn't freeze on the loading screen
-            progress.loaded();
+            // so the site doesn't freeze on the loading screen.
+            // setAllTimeline() must still run so career/skills section
+            // animations work even without the 3-D character.
+            progress.loaded().then(() => setAllTimeline());
             return;
           }
 
@@ -216,15 +218,15 @@ const Scene = () => {
     // character-model is the GSAP translation target for x shifts between sections.
     // It wraps the canvas so GSAP can move it as a single unit without touching
     // renderer internals or camera state.
-    <div className="character-model fixed inset-0 z-[2] pointer-events-none flex items-end justify-center">
+    <div className="character-model fixed inset-0 z-2 pointer-events-none flex items-end justify-center">
       {/* Canvas always renders at full viewport size so the Three.js scene
           is never clipped by the container; the container CSS constrains
           what is *visible* on mobile via Landing.css */}
-      <div ref={canvasDiv} className="relative w-full max-w-[1920px] h-[100vh]">
-        <div className="absolute left-1/2 bottom-[20%] w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-cyan-400 blur-[60px] opacity-40 z-[-1]" />
+      <div ref={canvasDiv} className="relative w-full max-w-480 h-screen">
+        <div className="absolute left-1/2 bottom-[20%] w-100 h-100 -translate-x-1/2 rounded-full bg-cyan-400 blur-[60px] opacity-40 z-[-1]" />
         <div
           ref={hoverDivRef}
-          className="absolute left-1/2 top-1/2 w-[280px] h-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="absolute left-1/2 top-1/2 w-70 h-70 -translate-x-1/2 -translate-y-1/2 rounded-full"
         />
       </div>
     </div>
