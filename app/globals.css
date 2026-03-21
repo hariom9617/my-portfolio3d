@@ -19,16 +19,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Prevent horizontal scroll at every level.
-   body { overflow: hidden } alone isn't enough — browsers move the scroll
-   target to <html> when body clips its own overflow, so <html> must also
-   opt out of horizontal scroll. Fixed-position elements (e.g. the 3-D
-   character canvas) are unaffected because they are clipped by the
-   viewport, not the document flow. */
-html {
-  overflow-x: hidden;
-}
-
 body {
   background: var(--background);
   color: var(--foreground);

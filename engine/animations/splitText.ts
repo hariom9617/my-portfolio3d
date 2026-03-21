@@ -12,11 +12,6 @@ interface ParaElement extends HTMLElement {
   split?: InstanceType<typeof SplitText>;
 }
 
-// Guard: the refresh listener must only be registered once.
-// Without this, every setSplitText() call (triggered by the refresh event)
-// stacks another listener, creating an exponential call chain.
-let refreshListenerRegistered = false;
-
 export default async function setSplitText() {
   if (typeof window === "undefined") return;
 
@@ -90,8 +85,5 @@ export default async function setSplitText() {
     );
   });
 
-  if (!refreshListenerRegistered) {
-    refreshListenerRegistered = true;
-    ScrollTrigger.addEventListener("refresh", () => { void setSplitText(); });
-  }
+  ScrollTrigger.addEventListener("refresh", () => { void setSplitText(); });
 }

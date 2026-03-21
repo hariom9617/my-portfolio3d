@@ -6,79 +6,69 @@ import { decryptFile } from "./decrypt";
 // They must run after progress.loaded() resolves inside Scene.tsx so that
 // ScrollTrigger timelines are never created before the loading gate closes.
 
-const setCharacter = () => {
+const setCharacter = (
+  renderer: THREE.WebGLRenderer,
+  scene: THREE.Scene,
+  camera: THREE.PerspectiveCamera
+) => {
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath("/draco/");
   loader.setDRACOLoader(dracoLoader);
 
   const loadCharacter = () => {
-    return new Promise<GLTF | null>((resolve, reject) => {
-      // Env-var guard: warn but do not throw — a throw here would reject the
-      // promise and (since Scene.tsx chains .then without .catch) silently
-      // freeze the loading bar at 91-92% forever.
-      const modelKey = process.env.NEXT_PUBLIC_MODEL_KEY;
-      if (!modelKey) {
-        console.error(
-          "[Character] NEXT_PUBLIC_MODEL_KEY is not set. " +
-            "Restart the dev server after creating .env.local."
+    return new Promise<GLTF | null>(async (resolve, reject) => {
+      try {
+        const encryptedBlob = await decryptFile(
+          "/models/character.enc?v=2",
+          "MyCharacter12"
         );
-        resolve(null);
-        return;
-      }
+        const blobUrl = URL.createObjectURL(new Blob([encryptedBlob]));
 
-      decryptFile("/models/character.enc?v=2", modelKey)
-        .then((encryptedBlob) => {
-          const blobUrl = URL.createObjectURL(new Blob([encryptedBlob]));
+        let character: THREE.Object3D;
+        loader.load(
+          blobUrl,
+          async (gltf) => {
+            character = gltf.scene;
+            await renderer.compileAsync(character, camera, scene);
+            character.traverse((child: any) => {
+              if (child.isMesh) {
+                const mesh = child as THREE.Mesh;
 
-          loader.load(
-            blobUrl,
-            (gltf) => {
-              const character = gltf.scene;
-
-              // Material customisation — synchronous, no awaiting needed
-              character.traverse((child: THREE.Object3D) => {
-                if ((child as THREE.Mesh).isMesh) {
-                  const mesh = child as THREE.Mesh;
-                  if (mesh.material) {
-                    if (mesh.name === "BODY.SHIRT") {
-                      const newMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
-                      newMat.color = new THREE.Color("#8B4513");
-                      mesh.material = newMat;
-                    } else if (mesh.name === "Pant") {
-                      const newMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
-                      newMat.color = new THREE.Color("#000000");
-                      mesh.material = newMat;
-                    }
+                if (mesh.material) {
+                  if (mesh.name === "BODY.SHIRT") {
+                    const newMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+                    newMat.color = new THREE.Color("#8B4513");
+                    mesh.material = newMat;
+                  } else if (mesh.name === "Pant") {
+                    const newMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+                    newMat.color = new THREE.Color("#000000");
+                    mesh.material = newMat;
                   }
-                  mesh.castShadow = true;
-                  mesh.receiveShadow = true;
-                  mesh.frustumCulled = true;
                 }
-              });
 
-              character.getObjectByName("footR")!.position.y = 3.36;
-              character.getObjectByName("footL")!.position.y = 3.36;
+                child.castShadow = true;
+                child.receiveShadow = true;
+                mesh.frustumCulled = true;
+              }
+            });
 
-              dracoLoader.dispose();
+            character!.getObjectByName("footR")!.position.y = 3.36;
+            character!.getObjectByName("footL")!.position.y = 3.36;
 
-              // CRITICAL: resolve immediately after parsing.
-              // compileAsync (shader compilation) is intentionally moved to
-              // Scene.tsx where it runs in the background AFTER progress.loaded()
-              // fires. This unblocks the 91→100% progress fill.
-              resolve(gltf);
-            },
-            undefined,
-            (error) => {
-              console.error("Error loading GLTF model:", error);
-              reject(error);
-            }
-          );
-        })
-        .catch((err) => {
-          console.error("[Character] Decrypt / load failed:", err);
-          reject(err);
-        });
+            dracoLoader.dispose();
+            resolve(gltf);
+          },
+          undefined,
+          (error) => {
+            console.error("Error loading GLTF model:", error);
+            reject(error);
+          }
+        );
+      } catch (err) {
+        reject(err);
+        console.error(err);
+      }
     });
   };
 
