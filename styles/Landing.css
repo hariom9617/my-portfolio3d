@@ -322,33 +322,6 @@ h2.landing-info-h2 {
   }
 }
 
-/* ── Mobile character container ─────────────────────────────────────────────
-   Scene.tsx applies "fixed inset-0 z-[2]" via Tailwind (full-screen canvas).
-   On mobile we keep that full-screen canvas but:
-   • lower z-index so section content (z-9) is always readable above it
-   • overflow:hidden clips GPU-composited canvas edges that would otherwise
-     bleed a 1-px fringe outside the viewport on some mobile GPUs
-   ───────────────────────────────────────────────────────────────────────── */
-@media screen and (max-width: 1024px) {
-  .character-model {
-    overflow: hidden;
-    /* Hero text layers (z-9) sit above character (z-2) — no change needed */
-  }
-
-  /* Give hero name a subtle text shadow so it stays readable over the
-     3-D character regardless of what body part appears behind it. */
-  .landing-intro h1,
-  .landing-intro h2 {
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
-  }
-
-  /* Push "A Full Stack / Engineer" text further from the very bottom edge
-     so the character's lower body doesn't cover it at small zoom values. */
-  .landing-info {
-    bottom: 60px !important;
-  }
-}
-
 @media screen and (min-width: 1025px) {
   .character-model {
     height: 100vh;

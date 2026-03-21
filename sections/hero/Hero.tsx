@@ -82,25 +82,6 @@ const Hero = () => {
           .landing-info h3   { font-size: 35px; }
           .landing-info-h2   { font-size: 55px; }
         }
-
-        /* ── Mobile only: move role text to top-right beside the name ── */
-        @media screen and (max-width: 1024px) {
-          .landing-info {
-            right: 0        !important;
-            left: auto      !important;
-            bottom: auto    !important;
-            top: 12%        !important;
-            transform: none !important;
-            text-align: right;
-          }
-          /* Compact font sizes so both blocks fit side-by-side */
-          .landing-info h3       { font-size: 15px !important; }
-          h2.landing-info-h2     { font-size: 19px !important; width: auto !important; margin-left: 0 !important; }
-          /* Landing.css sets margin-top:-20px on .landing-info h2 — reset it */
-          .landing-info h2       { margin-top: 2px !important; margin-left: 0 !important; }
-          /* Hide the gradient fade overlay — it obscures text at small sizes */
-          .landing-info-h2::after { display: none !important; }
-        }
       `}</style>
 
       <div className="landing-section w-full mx-auto relative" id="landingDiv">
@@ -132,12 +113,11 @@ const Hero = () => {
             </h1>
           </div>
 
-          {/* RIGHT — Role block
-              Mobile:  top-right beside the name (overridden by inline <style>)
-              Desktop: right of centre via lg: Tailwind classes            */}
+          {/* RIGHT — Role block */}
           <div className="
             landing-info
-            absolute z-9
+            absolute z-[9]
+            right-1/2 translate-x-1/2 bottom-[40px]
             lg:bottom-auto lg:top-[51%] lg:-translate-y-1/2 lg:translate-x-0 lg:right-auto lg:left-[66%] lg:text-left
             xl:left-[70%]
           ">

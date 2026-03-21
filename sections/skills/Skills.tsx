@@ -216,7 +216,7 @@ export default function Skills() {
                 </div>
 
                 {/* Skill cards */}
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {cat.items.map((skill, skillIdx) => (
                     <div
                       key={skill.name}

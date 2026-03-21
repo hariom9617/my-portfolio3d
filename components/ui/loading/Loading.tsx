@@ -10,13 +10,6 @@ const Loading = ({ percent }: { percent: number }) => {
   const [clicked, setClicked] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Pre-warm: start importing the initialFX chunk as soon as the bar is near
-  // 100% so the module is already cached when isLoaded fires ~1600ms later.
-  useEffect(() => {
-    if (percent < 80) return;
-    import("../../../engine/animations/initialFX");
-  }, [percent]);
-
   useEffect(() => {
     if (percent < 100) return;
     const t1 = setTimeout(() => {
@@ -29,7 +22,6 @@ const Loading = ({ percent }: { percent: number }) => {
 
   useEffect(() => {
     if (!isLoaded) return;
-    // Module is already cached from the pre-warm above — import resolves instantly
     import("../../../engine/animations/initialFX").then((module) => {
       setClicked(true);
       setTimeout(() => {

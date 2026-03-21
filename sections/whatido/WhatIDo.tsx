@@ -163,8 +163,9 @@ const WhatIDo = () => {
         flex items-center justify-center place-items-center
         relative opacity-100 z-[9]
         h-screen w-[var(--cWidth)] max-w-[1920px] mx-auto
-        max-[1024px]:h-auto max-[1024px]:pt-20 max-[1024px]:pb-12.5
+        max-[1024px]:h-auto max-[1024px]:py-[50px]
         max-[900px]:flex-col
+        max-[550px]:place-items-start max-[550px]:items-start max-[550px]:justify-start
       "
       >
         {/* LEFT — WHAT I DO title */}
@@ -173,7 +174,7 @@ const WhatIDo = () => {
           what-box
           w-1/2 flex justify-center relative z-[9]
           max-[900px]:w-[500px] max-[900px]:max-w-[calc(100%-50px)] max-[900px]:mx-auto
-          max-[550px]:max-w-[calc(100%-25px)]
+          max-[550px]:max-w-[calc(100%-25px)] max-[550px]:m-0
         "
         >
           <h2
@@ -201,7 +202,7 @@ const WhatIDo = () => {
           what-box
           w-1/2 flex justify-center relative z-[9]
           max-[900px]:w-[500px] max-[900px]:max-w-[calc(100%-50px)] max-[900px]:mx-auto max-[900px]:h-[500px]
-          max-[550px]:max-w-[calc(100%-25px)]
+          max-[550px]:max-w-[calc(100%-25px)] max-[550px]:m-0
         "
         >
           {/*
@@ -253,7 +254,6 @@ const WhatIDo = () => {
                 max-[1400px]:w-[380px] max-[1400px]:p-[30px]
                 max-[1024px]:w-[500px] max-[1024px]:p-[50px]
                 max-[900px]:w-full max-[900px]:p-[30px]
-                max-[1024px]:bg-black/40 max-[1024px]:backdrop-blur-sm
               "
               ref={(el) => setRef(el, 0)}
             >
@@ -335,7 +335,6 @@ const WhatIDo = () => {
                 max-[1400px]:w-[380px] max-[1400px]:p-[30px]
                 max-[1024px]:w-[500px] max-[1024px]:p-[50px]
                 max-[900px]:w-full max-[900px]:p-[30px]
-                max-[1024px]:bg-black/40 max-[1024px]:backdrop-blur-sm
               "
               ref={(el) => setRef(el, 1)}
             >
