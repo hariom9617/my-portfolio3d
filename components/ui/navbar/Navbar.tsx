@@ -25,14 +25,32 @@ const Navbar = () => {
     smoother.scrollTop(0);
     smoother.paused(true);
 
-    const links = document.querySelectorAll<HTMLAnchorElement>(".header ul a");
+    const links = document.querySelectorAll<HTMLAnchorElement>("ul a[data-href]");
     links.forEach((element) => {
       element.addEventListener("click", (e) => {
+        e.preventDefault(); // always stop the native anchor jump
+
+        const target = e.currentTarget as HTMLAnchorElement;
+        const selector = target.getAttribute("data-href");
+        if (!selector) return;
+
+        const section = document.querySelector<HTMLElement>(selector);
+        if (!section) return;
+
         if (window.innerWidth > 1024) {
-          e.preventDefault();
-          const target = e.currentTarget as HTMLAnchorElement;
-          const section = target.getAttribute("data-href");
-          smoother.scrollTo(section!, true, "top top");
+          // Desktop: delegate to ScrollSmoother for the smooth camera-synced scroll.
+          // Guard against smoother being paused (loading not yet finished) or
+          // failing (Club plugin not available) — fall back to native smooth scroll.
+          try {
+            smoother.scrollTo(selector, true, "top top");
+          } catch {
+            section.scrollIntoView({ behavior: "smooth" });
+          }
+        } else {
+          // Mobile: body has overflow:hidden so native anchors don't fire correctly.
+          // Manually scroll the window (the actual scroll container) to the section.
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top, behavior: "smooth" });
         }
       });
     });

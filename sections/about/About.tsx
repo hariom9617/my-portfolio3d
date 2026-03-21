@@ -26,12 +26,12 @@ const About = () => {
 
   return (
     <div
-      className="about-section flex items-center justify-start place-items-center relative opacity-100 h-auto w-[var(--cWidth)] mx-auto sm:justify-center lg:justify-end lg:max-w-[1920px] lg:h-[var(--vh)]"
+      className="about-section flex items-center justify-start place-items-center relative opacity-100 z-10 h-auto w-(--cWidth) mx-auto mb-160px sm:justify-center lg:mb-0 lg:justify-end lg:max-w-480 lg:h-(--vh)"
       id="about"
     >
       <div
         className="about-me
-          py-[50px] pb-0
+          py-[50px]
           w-[calc(100%-15px)]
           max-w-[calc(100%-15px)]
           md:w-[580px]
@@ -39,8 +39,12 @@ const About = () => {
           lg:p-0
           lg:w-[55%]
           xl:w-[48%]
+          lg:-translate-y-1/2
         "
-        style={{ transform: "translateY(-50%)" }}
+        /* translateY(-50%) is intentional only on desktop (lg+) where the
+           section has h-[100vh]. On mobile the section is h-auto, so the
+           transform was shifting content off-screen. Moved to Tailwind so
+           it only activates at the lg breakpoint. */
       >
         {/* Title — muted teal, tight uppercase tracking, lightweight */}
         <h3

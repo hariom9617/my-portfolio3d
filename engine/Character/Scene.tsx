@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import setCharacter from "./utils/character";
 import setLighting from "./utils/lighting";
 import { useLoading } from "@/components/ui/loading/LoadingProvider";
-import handleResize from "./utils/resizeUtils";
+import handleResize, { getResponsiveZoom } from "./utils/resizeUtils";
 import {
   handleMouseMove,
   handleTouchEnd,
@@ -25,13 +25,21 @@ const Scene = () => {
   const sceneRef = useRef(new THREE.Scene());
   const { setLoading } = useLoading();
 
-  const [character, setChar] = useState<THREE.Object3D | null>(null);
 
   useEffect(() => {
-    if (canvasDiv.current) {
-      let rect = canvasDiv.current.getBoundingClientRect();
-      let container = { width: rect.width, height: rect.height };
-      const aspect = container.width / container.height;
+    // Collect teardown work registered inside the deferred init block.
+    // useEffect's return can only run the teardown captured here, since the
+    // actual setup runs inside a setTimeout (different call-stack frame).
+    let teardown: (() => void) | undefined;
+
+    // Defer all WebGL initialisation by one task so React completes its first
+    // commit/paint before the GPU context is created. The loading screen is
+    // visible immediately instead of appearing 300-500ms late.
+    const initTimer = setTimeout(() => {
+      if (!canvasDiv.current) return;
+
+      const rect = canvasDiv.current.getBoundingClientRect();
+      const aspect = rect.width / rect.height;
       const scene = sceneRef.current;
 
       const renderer = new THREE.WebGLRenderer({
@@ -39,39 +47,55 @@ const Scene = () => {
         antialias: true,
       });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      // Cap at 2 — a ratio of 3-4× triples render work with no visible benefit
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1;
       canvasDiv.current.appendChild(renderer.domElement);
 
       const camera = new THREE.PerspectiveCamera(14.5, aspect, 0.1, 1000);
-      camera.position.z = 10;
       camera.position.set(0, 13.1, 24.7);
-      camera.zoom = 1.1;
+      // Use responsive zoom so portrait mobile screens pull back from the character
+      camera.zoom = getResponsiveZoom(aspect);
       camera.updateProjectionMatrix();
 
       let headBone: THREE.Object3D | null = null;
-      let screenLight: any | null = null;
+      let screenLight: THREE.Object3D | null = null;
       let mixer: THREE.AnimationMixer;
 
-      const clock = new THREE.Clock();
-
+      // THREE.Clock is deprecated — use performance.now() directly instead.
+      // Delta is capped at 100 ms to prevent large jumps after tab suspension.
+      let lastTime = performance.now();
       const light = setLighting(scene);
-
       const progress = setProgress((value) => setLoading(value));
 
-      const { loadCharacter } = setCharacter(renderer, scene, camera);
+      // setCharacter no longer needs renderer/camera — compileAsync moved here
+      const { loadCharacter } = setCharacter();
 
-      loadCharacter().then((gltf) => {
-        if (gltf) {
+      loadCharacter()
+        .then((gltf) => {
+          if (!gltf) {
+            // env-var missing or model resolved null — still complete loading
+            // so the site doesn't freeze on the loading screen
+            progress.loaded();
+            return;
+          }
+
           const animations = setAnimations(gltf);
           hoverDivRef.current && animations.hover(gltf, hoverDivRef.current);
           mixer = animations.mixer;
           const character = gltf.scene;
-          setChar(character);
           scene.add(character);
           headBone = character.getObjectByName("spine006") || null;
           screenLight = character.getObjectByName("screenlight") || null;
+
+          // Kick off shader compilation in the background.
+          // It no longer blocks progress.loaded() — the bar fills 91→100%
+          // immediately, and shaders are ready by the time the intro animation
+          // starts (2500ms later).
+          renderer.compileAsync(character, camera, scene).catch(() => {
+            // Non-fatal: the scene still renders; first frame may hitch briefly
+          });
 
           progress.loaded().then(() => {
             setCharTimeline(character, camera);
@@ -83,15 +107,22 @@ const Scene = () => {
             }, 2500);
           });
 
-          window.addEventListener("resize", () =>
-            handleResize(renderer, camera, canvasDiv, character),
-          );
-        }
-      });
+          // Store the handler reference so the cleanup can remove the exact same fn
+          const onResize = () => handleResize(renderer, camera, canvasDiv, character);
+          window.addEventListener("resize", onResize);
+          (renderer as THREE.WebGLRenderer & { __onResize?: () => void }).__onResize = onResize;
+        })
+        .catch((err) => {
+          // Model load failed (network error, decrypt error, etc.)
+          // Force loading to complete so the site is still usable without the 3-D character
+          console.error("[Scene] loadCharacter failed:", err);
+          progress.loaded();
+        });
 
-      let mouse = { x: 0, y: 0 },
-        interpolation = { x: 0.1, y: 0.2 };
+      let mouse = { x: 0, y: 0 };
+      let interpolation = { x: 0.1, y: 0.2 };
 
+      // Named handlers so cleanup can remove the exact same references
       const onMouseMove = (event: MouseEvent) => {
         handleMouseMove(event, (x, y) => (mouse = { x, y }));
       };
@@ -104,7 +135,6 @@ const Scene = () => {
           );
         }, 200);
       };
-
       const onTouchEnd = () => {
         handleTouchEnd((x, y, interpolationX, interpolationY) => {
           mouse = { x, y };
@@ -112,9 +142,8 @@ const Scene = () => {
         });
       };
 
-      document.addEventListener("mousemove", (event) => {
-        onMouseMove(event);
-      });
+      // Use named handlers directly — no wrapping arrow fn (keeps reference stable)
+      document.addEventListener("mousemove", onMouseMove);
       const landingDiv = document.getElementById("landingDiv");
       if (landingDiv) {
         landingDiv.addEventListener("touchstart", onTouchStart);
@@ -134,31 +163,53 @@ const Scene = () => {
           );
           light.setPointLight(screenLight);
         }
-        const delta = clock.getDelta();
-        if (mixer) {
-          mixer.update(delta);
-        }
+        const now = performance.now();
+        // Cap delta at 100 ms so a suspended tab doesn't cause a huge jump
+        const delta = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+        if (mixer) mixer.update(delta);
         renderer.render(scene, camera);
       };
       animate();
 
-      return () => {
+      // Register teardown so the useEffect cleanup (below) can call it
+      teardown = () => {
         clearTimeout(debounce);
+
+        // Dispose all Three.js GPU resources to prevent memory leaks
+        scene.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.geometry?.dispose();
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((m) => m.dispose());
+            } else {
+              (mesh.material as THREE.Material)?.dispose();
+            }
+          }
+        });
         scene.clear();
         renderer.dispose();
-        window.removeEventListener("resize", () =>
-          handleResize(renderer, camera, canvasDiv, character!),
-        );
-        if (canvasDiv.current) {
-          canvasDiv.current.removeChild(renderer.domElement);
-        }
+
+        // Remove the exact same resize handler reference that was registered
+        const storedResize = (renderer as THREE.WebGLRenderer & { __onResize?: () => void }).__onResize;
+        if (storedResize) window.removeEventListener("resize", storedResize);
+
+        document.removeEventListener("mousemove", onMouseMove);
         if (landingDiv) {
-          document.removeEventListener("mousemove", onMouseMove);
           landingDiv.removeEventListener("touchstart", onTouchStart);
           landingDiv.removeEventListener("touchend", onTouchEnd);
         }
+        if (canvasDiv.current) {
+          canvasDiv.current.removeChild(renderer.domElement);
+        }
       };
-    }
+    }, 0);
+
+    return () => {
+      clearTimeout(initTimer); // cancels the deferred init if component unmounts before it fires
+      teardown?.();            // runs Three.js cleanup if init already ran
+    };
   }, []);
 
   return (
@@ -166,6 +217,9 @@ const Scene = () => {
     // It wraps the canvas so GSAP can move it as a single unit without touching
     // renderer internals or camera state.
     <div className="character-model fixed inset-0 z-[2] pointer-events-none flex items-end justify-center">
+      {/* Canvas always renders at full viewport size so the Three.js scene
+          is never clipped by the container; the container CSS constrains
+          what is *visible* on mobile via Landing.css */}
       <div ref={canvasDiv} className="relative w-full max-w-[1920px] h-[100vh]">
         <div className="absolute left-1/2 bottom-[20%] w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-cyan-400 blur-[60px] opacity-40 z-[-1]" />
         <div
