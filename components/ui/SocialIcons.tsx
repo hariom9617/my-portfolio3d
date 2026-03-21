@@ -123,7 +123,7 @@ const SocialIcons = () => {
         </div>
 
         {/* Resume Button */}
-        <a
+        {/* <a
           className="
             absolute z-[99] flex gap-[5px]
             bottom-10 right-0
@@ -140,7 +140,7 @@ const SocialIcons = () => {
           <span className="text-white text-[17px] mt-[-1px] flex items-center md:text-[23px] md:mt-[-1.5px]">
             <TbNotes />
           </span>
-        </a>
+        </a> */}
       </div>
     </>
   );

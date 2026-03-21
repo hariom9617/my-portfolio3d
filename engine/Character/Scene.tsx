@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import setCharacter from "./utils/character";
 import setLighting from "./utils/lighting";
 import { useLoading } from "@/components/ui/loading/LoadingProvider";
-import handleResize from "./utils/resizeUtils";
+import handleResize, { getResponsiveZoom } from "./utils/resizeUtils";
 import {
   handleMouseMove,
   handleTouchEnd,
@@ -25,7 +25,6 @@ const Scene = () => {
   const sceneRef = useRef(new THREE.Scene());
   const { setLoading } = useLoading();
 
-  const [character, setChar] = useState<THREE.Object3D | null>(null);
 
   useEffect(() => {
     // Collect teardown work registered inside the deferred init block.
@@ -56,14 +55,17 @@ const Scene = () => {
 
       const camera = new THREE.PerspectiveCamera(14.5, aspect, 0.1, 1000);
       camera.position.set(0, 13.1, 24.7);
-      camera.zoom = 1.1;
+      // Use responsive zoom so portrait mobile screens pull back from the character
+      camera.zoom = getResponsiveZoom(aspect);
       camera.updateProjectionMatrix();
 
       let headBone: THREE.Object3D | null = null;
       let screenLight: THREE.Object3D | null = null;
       let mixer: THREE.AnimationMixer;
 
-      const clock = new THREE.Clock();
+      // THREE.Clock is deprecated — use performance.now() directly instead.
+      // Delta is capped at 100 ms to prevent large jumps after tab suspension.
+      let lastTime = performance.now();
       const light = setLighting(scene);
       const progress = setProgress((value) => setLoading(value));
 
@@ -83,7 +85,6 @@ const Scene = () => {
           hoverDivRef.current && animations.hover(gltf, hoverDivRef.current);
           mixer = animations.mixer;
           const character = gltf.scene;
-          setChar(character);
           scene.add(character);
           headBone = character.getObjectByName("spine006") || null;
           screenLight = character.getObjectByName("screenlight") || null;
@@ -162,7 +163,10 @@ const Scene = () => {
           );
           light.setPointLight(screenLight);
         }
-        const delta = clock.getDelta();
+        const now = performance.now();
+        // Cap delta at 100 ms so a suspended tab doesn't cause a huge jump
+        const delta = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
         if (mixer) mixer.update(delta);
         renderer.render(scene, camera);
       };
@@ -213,6 +217,9 @@ const Scene = () => {
     // It wraps the canvas so GSAP can move it as a single unit without touching
     // renderer internals or camera state.
     <div className="character-model fixed inset-0 z-[2] pointer-events-none flex items-end justify-center">
+      {/* Canvas always renders at full viewport size so the Three.js scene
+          is never clipped by the container; the container CSS constrains
+          what is *visible* on mobile via Landing.css */}
       <div ref={canvasDiv} className="relative w-full max-w-[1920px] h-[100vh]">
         <div className="absolute left-1/2 bottom-[20%] w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-cyan-400 blur-[60px] opacity-40 z-[-1]" />
         <div
