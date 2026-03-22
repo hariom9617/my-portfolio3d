@@ -208,8 +208,15 @@ export function setCharTimeline(
 export function setAllTimeline() {
   if (typeof window === "undefined") return;
 
+  // Career section layout/parallax scroll animation.
+  // IMPORTANT: .career-info-box opacity is intentionally NOT animated here.
+  // Experience.tsx owns each card's opacity via its own per-element ScrollTriggers.
+  // Animating opacity here from a scrub/section-level trigger creates two competing
+  // tweens on the same elements — the section-level one wins and leaves cards
+  // invisible when scroll position doesn't fully traverse the trigger range
+  // (common on mobile and on Vercel where the character may not load).
   if (window.innerWidth > 1024) {
-    // ── Desktop: scrubbed reveal tied to scroll progress ──
+    // ── Desktop: scrubbed layout reveal ──
     const careerTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: ".career-section",
@@ -221,33 +228,13 @@ export function setAllTimeline() {
     });
 
     careerTimeline
+      // Reveal the timeline line container (layout, not card content)
       .fromTo(".career-timeline", { maxHeight: "10%" }, { maxHeight: "100%", duration: 0.5 }, 0)
       .fromTo(".career-timeline", { opacity: 0 }, { opacity: 1, duration: 0.1 }, 0)
-      .fromTo(".career-info-box", { opacity: 0 }, { opacity: 1, stagger: 0.1, duration: 0.5 }, 0)
-      .fromTo(".career-dot", { animationIterationCount: "infinite" }, { animationIterationCount: "1", delay: 0.3, duration: 0.1 }, 0)
+      // Section parallax drift
       .fromTo(".career-section", { y: 0 }, { y: "20%", duration: 0.5, delay: 0.2 }, 0);
-  } else {
-    // ── Mobile: simple play-once animation (no scrub, no maxHeight clip) ──
-    // The scrub approach requires precise scroll-through to reveal content;
-    // on mobile with a shorter viewport this often leaves everything invisible.
-    gsap.fromTo(
-      ".career-info-box",
-      { opacity: 0, y: 24 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: "power2.out",
-        stagger: 0.15,
-        scrollTrigger: {
-          trigger: ".career-section",
-          start: "top 80%",
-          toggleActions: "play none none none",
-          invalidateOnRefresh: true,
-        },
-      },
-    );
   }
+  // No section-level career animation on mobile — Experience.tsx handles all of it.
 
   // ── Hide character canvas on /projects page ──
   if (
