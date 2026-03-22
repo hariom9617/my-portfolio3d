@@ -94,64 +94,83 @@ export default function Skills() {
   const cardRefs     = useRef<(HTMLDivElement | null)[][]>([]);
 
   useEffect(() => {
-    // Track only the triggers created by this component so cleanup
-    // doesn't kill the GsapScroll timelines owned by Scene.tsx.
-    const triggers: ReturnType<typeof ScrollTrigger.create>[] = [];
+    // Set initial hidden state via GSAP — NOT via CSS class.
+    // If GSAP fails for any reason the elements stay visible (safe fallback).
+    const allTargets: (Element | null)[] = [
+      headerRef.current,
+      ...categoryRefs.current,
+      ...cardRefs.current.flat(),
+    ];
+    allTargets.forEach((el) => el && gsap.set(el, { opacity: 0 }));
+
+    // Collect every ScrollTrigger this component creates so cleanup is scoped.
+    const tweens: gsap.core.Tween[] = [];
 
     if (headerRef.current) {
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-            onToggle: (self) => triggers.push(self),
-          },
-        }
+      tweens.push(
+        gsap.fromTo(
+          headerRef.current,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
+            scrollTrigger: {
+              trigger: headerRef.current,
+              start: "top 85%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
       );
     }
 
     categoryRefs.current.forEach((el, i) => {
       if (!el) return;
       const fromLeft = i % 2 === 0;
-      gsap.fromTo(
-        el,
-        { opacity: 0, x: fromLeft ? -40 : 40 },
-        {
-          opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 88%",
-            toggleActions: "play none none none",
-            onToggle: (self) => triggers.push(self),
-          },
-        }
+      tweens.push(
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: fromLeft ? -40 : 40 },
+          {
+            opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 88%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
       );
     });
 
     cardRefs.current.forEach((group) => {
       if (!group?.length) return;
-      const validCards = group.filter(Boolean);
-      gsap.fromTo(
-        validCards,
-        { opacity: 0, y: 30, scale: 0.92 },
-        {
-          opacity: 1, y: 0, scale: 1, duration: 0.5,
-          ease: "power3.out", stagger: 0.07,
-          scrollTrigger: {
-            trigger: validCards[0] as Element,
-            start: "top 90%",
-            toggleActions: "play none none none",
-            onToggle: (self) => triggers.push(self),
-          },
-        }
+      const validCards = group.filter(Boolean) as Element[];
+      tweens.push(
+        gsap.fromTo(
+          validCards,
+          { opacity: 0, y: 30, scale: 0.92 },
+          {
+            opacity: 1, y: 0, scale: 1, duration: 0.5,
+            ease: "power3.out", stagger: 0.07,
+            scrollTrigger: {
+              trigger: validCards[0],
+              start: "top 90%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
       );
     });
 
-    return () => triggers.forEach((t) => t.kill());
+    return () => {
+      tweens.forEach((t) => {
+        t.scrollTrigger?.kill();
+        t.kill();
+      });
+    };
   }, []);
 
   return (
@@ -181,7 +200,7 @@ export default function Skills() {
         {/* ── Header ── */}
         <div
           ref={headerRef}
-          className="flex flex-col items-center mb-16 text-center opacity-0"
+          className="flex flex-col items-center mb-16 text-center"
         >
           <div className="
             inline-flex items-center gap-2 px-3 py-1 rounded-full
@@ -216,7 +235,7 @@ export default function Skills() {
                 {/* Category heading */}
                 <div
                   ref={(el) => { categoryRefs.current[catIdx] = el; }}
-                  className="flex items-center gap-3 px-2 opacity-0"
+                  className="flex items-center gap-3 px-2"
                 >
                   <span className="text-(--accentColor)">{cat.icon}</span>
                   <h3 className="text-[18px] font-semibold tracking-[1px]">{cat.label}</h3>
@@ -228,7 +247,7 @@ export default function Skills() {
                     <div
                       key={skill.name}
                       ref={(el) => { cardRefs.current[catIdx][skillIdx] = el; }}
-                      className="glass-card rounded-xl p-4 flex flex-col items-center justify-center gap-3 text-center opacity-0"
+                      className="glass-card rounded-xl p-4 flex flex-col items-center justify-center gap-3 text-center"
                     >
                       <div className="w-12 h-12 mb-2 flex items-center justify-center rounded-lg bg-black/50 p-2">
                         <img
