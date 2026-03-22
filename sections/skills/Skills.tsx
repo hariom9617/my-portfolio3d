@@ -94,6 +94,10 @@ export default function Skills() {
   const cardRefs     = useRef<(HTMLDivElement | null)[][]>([]);
 
   useEffect(() => {
+    // Track only the triggers created by this component so cleanup
+    // doesn't kill the GsapScroll timelines owned by Scene.tsx.
+    const triggers: ReturnType<typeof ScrollTrigger.create>[] = [];
+
     if (headerRef.current) {
       gsap.fromTo(
         headerRef.current,
@@ -103,7 +107,8 @@ export default function Skills() {
           scrollTrigger: {
             trigger: headerRef.current,
             start: "top 85%",
-            toggleActions: "play none none reverse",
+            toggleActions: "play none none none",
+            onToggle: (self) => triggers.push(self),
           },
         }
       );
@@ -120,7 +125,8 @@ export default function Skills() {
           scrollTrigger: {
             trigger: el,
             start: "top 88%",
-            toggleActions: "play none none reverse",
+            toggleActions: "play none none none",
+            onToggle: (self) => triggers.push(self),
           },
         }
       );
@@ -136,15 +142,16 @@ export default function Skills() {
           opacity: 1, y: 0, scale: 1, duration: 0.5,
           ease: "power3.out", stagger: 0.07,
           scrollTrigger: {
-            trigger: validCards[0],
+            trigger: validCards[0] as Element,
             start: "top 90%",
-            toggleActions: "play none none reverse",
+            toggleActions: "play none none none",
+            onToggle: (self) => triggers.push(self),
           },
         }
       );
     });
 
-    return () => ScrollTrigger.getAll().forEach((t) => t.kill());
+    return () => triggers.forEach((t) => t.kill());
   }, []);
 
   return (
@@ -167,8 +174,8 @@ export default function Skills() {
         id="skills"
         className="
           min-h-screen
-          w-[var(--cWidth)] max-w-[1920px] mx-auto
-          px-6 py-20 relative z-[9]
+          w-(--cWidth) max-w-480 mx-auto
+          px-6 py-20 relative z-9
         "
       >
         {/* ── Header ── */}
@@ -178,8 +185,8 @@ export default function Skills() {
         >
           <div className="
             inline-flex items-center gap-2 px-3 py-1 rounded-full
-            bg-[var(--accentColor)]/10 border border-[var(--accentColor)]/20
-            text-[var(--accentColor)] text-xs font-bold uppercase tracking-wider mb-4
+            bg-(--accentColor)/10 border border-(--accentColor)/20
+            text-(--accentColor) text-xs font-bold uppercase tracking-wider mb-4
           ">
             <Zap size={14} />
             My Capabilities
@@ -187,11 +194,11 @@ export default function Skills() {
           <h2 className="
             text-[calc(2.5vw+15px)] leading-[calc(2.5vw+12px)]
             font-semibold tracking-tight mb-4
-            max-[900px]:text-[38px] max-[900px]:leading-[36px]
+            max-[900px]:text-[38px] max-[900px]:leading-9
             min-[1950px]:text-[5rem]
           ">
             Tech{" "}
-            <span className="text-[var(--accentColor)]">Stack</span>
+            <span className="text-(--accentColor)">Stack</span>
           </h2>
           <p className="max-w-2xl text-white/40 text-[15px] leading-relaxed font-extralight tracking-[0.5px]">
             A curated selection of modern technologies and frameworks I use to
@@ -211,7 +218,7 @@ export default function Skills() {
                   ref={(el) => { categoryRefs.current[catIdx] = el; }}
                   className="flex items-center gap-3 px-2 opacity-0"
                 >
-                  <span className="text-[var(--accentColor)]">{cat.icon}</span>
+                  <span className="text-(--accentColor)">{cat.icon}</span>
                   <h3 className="text-[18px] font-semibold tracking-[1px]">{cat.label}</h3>
                 </div>
 

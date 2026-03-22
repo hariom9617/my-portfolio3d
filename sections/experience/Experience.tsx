@@ -79,18 +79,20 @@ export default function Career() {
       }
     );
 
+    const isMobile = window.innerWidth <= 1024;
+
     cardRefs.current.forEach((card, i) => {
       if (!card) return;
       const isLeft = entries[i].align === "left";
       gsap.fromTo(
         card,
-        { opacity: 0, x: isLeft ? -60 : 60 },
+        { opacity: 0, x: isMobile ? 0 : (isLeft ? -60 : 60) },
         {
           opacity: 1, x: 0, duration: 0.8, ease: "power3.out",
           scrollTrigger: {
             trigger: card,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            start: "top 88%",
+            toggleActions: "play none none none",
           },
         }
       );
@@ -105,31 +107,40 @@ export default function Career() {
           scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)",
           scrollTrigger: {
             trigger: dot,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            start: "top 90%",
+            toggleActions: "play none none none",
           },
         }
       );
     });
 
-    periodRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const isLeft = entries[i].align === "left";
-      gsap.fromTo(
-        el,
-        { opacity: 0, x: isLeft ? 40 : -40 },
-        {
-          opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    });
+    // Period date labels are hidden on mobile — skip animation to avoid
+    // GSAP touching display:none elements unnecessarily.
+    if (!isMobile) {
+      periodRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const isLeft = entries[i].align === "left";
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: isLeft ? 40 : -40 },
+          {
+            opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      });
+    }
 
-    return () => ScrollTrigger.getAll().forEach((t) => t.kill());
+    // Only kill the triggers we own — not the GsapScroll timelines.
+    return () => {
+      ScrollTrigger.getAll()
+        .filter((t) => !t.vars.id?.toString().startsWith("__"))
+        .forEach((t) => t.kill());
+    };
   }, []);
 
   return (
@@ -200,17 +211,24 @@ export default function Career() {
         @media only screen and (max-width: 900px) {
           .career-timeline-line { left: 20px; }
           .career-dot-pulse { left: 20px; }
+          /* Stack all entries left-anchored: dot on the left, card to the right */
+          .career-info-box { padding-left: 52px; }
+          .career-dot-wrapper {
+            position: absolute;
+            left: 0;
+            top: 24px;
+          }
         }
         @media only screen and (max-width: 1025px) {
           .career-section { padding-top: 220px; margin-top: -200px; margin-bottom: 0; }
         }
       `}</style>
 
-      <div className="career-section relative mx-auto mb-[250px] py-[120px] max-[600px]:py-[90px]">
+      <div className="career-section relative mx-auto mb-62.5 py-30 max-[600px]:py-22.5">
         <div className="absolute inset-0 grid-pattern pointer-events-none opacity-40" />
         <div className="absolute inset-0 scanline pointer-events-none opacity-20" />
 
-        <div className="relative z-10 max-w-[1920px] w-[var(--cWidth)] mx-auto px-6">
+        <div className="relative z-10 max-w-480 w-(--cWidth) mx-auto px-6">
 
           {/* ── Header ── */}
           <div className="max-w-7xl mx-auto px-6 pb-16 text-center relative z-10">
@@ -219,19 +237,19 @@ export default function Career() {
             <span className="
               inline-block px-4 py-1.5 mb-6
               text-xs font-bold tracking-[0.2em] uppercase
-              rounded-full bg-[var(--accentColor)]/10
-              text-[var(--accentColor)] border border-[var(--accentColor)]/20
+              rounded-full bg-(--accentColor)/10
+              text-(--accentColor) border border-(--accentColor)/20
             ">
               Professional Timeline
             </span>
 
             {/* Title */}
             <h2 className="
-              text-[70px] leading-[70px] font-black tracking-tighter mb-6
-              bg-gradient-to-b from-white to-slate-500
+              text-[70px] leading-17.5 font-black tracking-tighter mb-6
+              bg-linear-to-b from-white to-slate-500
               bg-clip-text [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]
-              max-[1400px]:text-[50px] max-[1400px]:leading-[50px]
-              max-[600px]:text-[45px] max-[600px]:leading-[45px]
+              max-[1400px]:text-[50px] max-[1400px]:leading-12.5
+              max-[600px]:text-[45px] max-[600px]:leading-11.25
             ">
               The Journey.
             </h2>
@@ -251,9 +269,9 @@ export default function Career() {
           <div ref={timelineRef} className="career-timeline relative space-y-16">
 
             <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-              <span className="text-[12rem] font-black text-white/[0.04] absolute -left-10 top-0">2026</span>
-              <span className="text-[12rem] font-black text-white/[0.04] absolute -right-10 top-1/3">2025</span>
-              <span className="text-[12rem] font-black text-white/[0.04] absolute -left-10 top-2/3">2024</span>
+              <span className="text-[12rem] font-black text-white/4 absolute -left-10 top-0">2026</span>
+              <span className="text-[12rem] font-black text-white/4 absolute -right-10 top-1/3">2025</span>
+              <span className="text-[12rem] font-black text-white/4 absolute -left-10 top-2/3">2024</span>
             </div>
 
             <div ref={lineRef} className="career-timeline-line" />
@@ -264,23 +282,23 @@ export default function Career() {
                 key={i}
                 className="career-info-box relative flex flex-col md:flex-row items-stretch md:items-center gap-0"
               >
-                {/* ── LEFT ── */}
-                <div className="flex-1 flex md:justify-end pr-0 md:pr-8">
+                {/* ── LEFT ── (order-2 on mobile so dot always renders first) */}
+                <div className="flex-1 flex md:justify-end pr-0 md:pr-8 order-2 md:order-0">
                   {entry.align === "left" ? (
                     <div
                       ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-[440px] p-6 rounded-xl relative overflow-hidden opacity-0"
+                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden opacity-0"
                     >
                       {/* Lucide icon as watermark */}
                       <div className="absolute top-0 left-0 p-2 opacity-10 text-white">
                         {entry.icon}
                       </div>
                       <h3 className="text-xl font-bold text-white mb-1 md:text-right">{entry.role}</h3>
-                      <p className="text-[var(--accentColor)] font-mono text-sm mb-4 md:text-right">{entry.company}</p>
+                      <p className="text-(--accentColor) font-mono text-sm mb-4 md:text-right">{entry.company}</p>
                       <div className="space-y-3">
                         <div className="flex gap-2 flex-wrap md:justify-end">
                           {entry.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 rounded bg-[var(--accentColor)]/10 text-[var(--accentColor)] text-[10px] font-mono border border-[var(--accentColor)]/20">
+                            <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">
                               {tag}
                             </span>
                           ))}
@@ -295,14 +313,14 @@ export default function Career() {
                       ref={(el) => { periodRefs.current[i] = el; }}
                       className="hidden md:flex flex-col items-end text-right space-y-2 justify-center opacity-0"
                     >
-                      <span className="text-[var(--accentColor)] font-mono font-bold text-xl uppercase">{entry.period}</span>
-                      <p className="text-white/40 text-sm max-w-[260px] font-extralight">{entry.periodNote}</p>
+                      <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
+                      <p className="text-white/40 text-sm max-w-65 font-extralight">{entry.periodNote}</p>
                     </div>
                   )}
                 </div>
 
-                {/* ── CENTER DOT ── */}
-                <div className="flex flex-col items-center justify-center relative z-20 flex-shrink-0 px-4">
+                {/* ── DOT — centered on desktop, absolutely-left on mobile ── */}
+                <div className="career-dot-wrapper flex flex-col items-center justify-center relative z-20 shrink-0 px-4">
                   <div
                     ref={(el) => { dotRefs.current[i] = el; }}
                     className="career-dot career-dot-glow opacity-0"
@@ -314,17 +332,17 @@ export default function Career() {
                   {entry.align === "right" ? (
                     <div
                       ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-[440px] p-6 rounded-xl relative overflow-hidden opacity-0"
+                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden opacity-0"
                     >
                       <div className="absolute top-0 right-0 p-2 opacity-10 text-white">
                         {entry.icon}
                       </div>
                       <h3 className="text-xl font-bold text-white mb-1">{entry.role}</h3>
-                      <p className="text-[var(--accentColor)] font-mono text-sm mb-4">{entry.company}</p>
+                      <p className="text-(--accentColor) font-mono text-sm mb-4">{entry.company}</p>
                       <div className="space-y-3">
                         <div className="flex gap-2 flex-wrap">
                           {entry.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 rounded bg-[var(--accentColor)]/10 text-[var(--accentColor)] text-[10px] font-mono border border-[var(--accentColor)]/20">
+                            <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">
                               {tag}
                             </span>
                           ))}
@@ -339,8 +357,8 @@ export default function Career() {
                       ref={(el) => { periodRefs.current[i] = el; }}
                       className="hidden md:flex flex-col items-start space-y-2 justify-center opacity-0"
                     >
-                      <span className="text-[var(--accentColor)] font-mono font-bold text-xl uppercase">{entry.period}</span>
-                      <p className="text-white/40 text-sm max-w-[260px] font-extralight">{entry.periodNote}</p>
+                      <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
+                      <p className="text-white/40 text-sm max-w-65 font-extralight">{entry.periodNote}</p>
                     </div>
                   )}
                 </div>
