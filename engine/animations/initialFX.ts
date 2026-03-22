@@ -19,6 +19,11 @@ export async function initialFX() {
   const smoother = getSmoother();
   if (smoother) smoother.paused(false);
 
+  // Recalculate all ScrollTrigger positions now that the loading screen is gone
+  // and the final layout is in place. Without this, triggers created while the
+  // loading overlay was visible have stale offsets and never fire on mobile.
+  setTimeout(() => ScrollTrigger.refresh(), 150);
+
   const mainEl = document.getElementsByTagName("main")[0];
   if (mainEl) mainEl.classList.add("main-active");
 

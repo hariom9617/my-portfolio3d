@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollSmoother } from "gsap/all";
@@ -9,7 +9,36 @@ import { setSmoother } from "@/utils/smootherRef";
 
 gsap.registerPlugin(ScrollSmoother, ScrollTrigger);
 
+const NAV_LINKS = [
+  { label: "ABOUT",   href: "#about" },
+  { label: "WORK",    href: "#work" },
+  { label: "CONTACT", href: "#contact" },
+];
+
 const Navbar = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const smootherRef = useRef<InstanceType<typeof ScrollSmoother> | null>(null);
+
+  // Close menu on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Animate overlay open / close
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    if (menuOpen) {
+      gsap.fromTo(el, { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" });
+    } else {
+      gsap.to(el, { opacity: 0, y: -20, duration: 0.2, ease: "power2.in" });
+    }
+  }, [menuOpen]);
+
+  // ScrollSmoother + link click handler
   useEffect(() => {
     const smoother = ScrollSmoother.create({
       wrapper: "#smooth-wrapper",
@@ -20,86 +49,133 @@ const Navbar = () => {
       autoResize: true,
       ignoreMobileResize: true,
     });
+    smootherRef.current = smoother;
 
     setSmoother(smoother);
     smoother.scrollTop(0);
     smoother.paused(true);
 
-    const links = document.querySelectorAll<HTMLAnchorElement>("ul a[data-href]");
-    links.forEach((element) => {
-      element.addEventListener("click", (e) => {
-        e.preventDefault(); // always stop the native anchor jump
+    const handleLinkClick = (e: Event, selector: string) => {
+      e.preventDefault();
+      setMenuOpen(false);
 
-        const target = e.currentTarget as HTMLAnchorElement;
-        const selector = target.getAttribute("data-href");
-        if (!selector) return;
+      const section = document.querySelector<HTMLElement>(selector);
+      if (!section) return;
 
-        const section = document.querySelector<HTMLElement>(selector);
-        if (!section) return;
-
-        if (window.innerWidth > 1024) {
-          // Desktop: delegate to ScrollSmoother for the smooth camera-synced scroll.
-          // Guard against smoother being paused (loading not yet finished) or
-          // failing (Club plugin not available) — fall back to native smooth scroll.
-          try {
-            smoother.scrollTo(selector, true, "top top");
-          } catch {
-            section.scrollIntoView({ behavior: "smooth" });
-          }
-        } else {
-          // Mobile: body has overflow:hidden so native anchors don't fire correctly.
-          // Manually scroll the window (the actual scroll container) to the section.
+      if (window.innerWidth > 1024) {
+        try {
+          smoother.scrollTo(selector, true, "top top");
+        } catch {
+          section.scrollIntoView({ behavior: "smooth" });
+        }
+      } else {
+        // Slight delay so the overlay close animation doesn't fight the scroll
+        setTimeout(() => {
           const top = section.getBoundingClientRect().top + window.scrollY;
           window.scrollTo({ top, behavior: "smooth" });
-        }
-      });
+        }, 220);
+      }
+    };
+
+    const links = document.querySelectorAll<HTMLAnchorElement>("a[data-href]");
+    const handlers: Array<{ el: HTMLAnchorElement; fn: (e: Event) => void }> = [];
+    links.forEach((el) => {
+      const selector = el.getAttribute("data-href");
+      if (!selector) return;
+      const fn = (e: Event) => handleLinkClick(e, selector);
+      el.addEventListener("click", fn);
+      handlers.push({ el, fn });
     });
 
     const handleResize = () => ScrollTrigger.refresh();
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    return () => {
+      handlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   return (
     <>
+      {/* ── Top bar ── */}
       <div className="
-        relative flex w-[var(--cWidth)] max-w-[var(--cMaxWidth)] justify-between items-center
-        py-5 -mb-[100px] box-border
+        relative flex w-(--cWidth) max-w-(--cMaxWidth) justify-between items-center
+        py-5 -mb-25 box-border
         fixed left-1/2 -translate-x-1/2 top-0 z-[9999]
         min-[1200px]:py-[35px]
       ">
+        {/* HP logo — hidden on mobile */}
         <a
           href="/#"
           data-cursor="disable"
-          className="font-bold text-sm tracking-[0.2px] min-[500px]:text-base min-[1200px]:text-lg"
+          className="hidden min-[1024px]:block font-bold text-sm tracking-[0.2px] min-[1200px]:text-lg"
         >
           HP
         </a>
 
+        {/* Email — desktop only */}
         <a
           href="mailto:hariompatil9617@gmail.com"
           data-cursor="disable"
           className="
             hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
             text-[15px] tracking-[1px] font-medium whitespace-nowrap
-            min-[900px]:block
-            min-[1200px]:text-base
+            min-[900px]:block min-[1200px]:text-base
           "
         >
           hariompatil9617@gmail.com
         </a>
 
+        {/* Desktop nav links */}
         <ul className="
-          text-xs flex flex-col m-0 p-0 list-none gap-y-2 items-end
-          [&>li]:tracking-[1px] [&>li]:text-[#ccc] [&>li]:font-semibold [&>li]:cursor-pointer
-          min-[500px]:flex-row min-[500px]:items-center min-[500px]:text-sm min-[500px]:gap-x-10 min-[500px]:[&>li]:text-[#eae5ec]
+          hidden min-[1024px]:flex flex-row m-0 p-0 list-none items-center
+          gap-x-10 text-sm
+          [&>li]:tracking-[1px] [&>li]:text-[#eae5ec] [&>li]:font-semibold [&>li]:cursor-pointer
           min-[1200px]:gap-x-20 min-[1200px]:text-base
         ">
-          <li><a data-href="#about" href="#about"><HoverLinks text="ABOUT" /></a></li>
-          <li><a data-href="#work" href="#work"><HoverLinks text="WORK" /></a></li>
-          <li><a data-href="#contact" href="#contact"><HoverLinks text="CONTACT" /></a></li>
+          {NAV_LINKS.map(({ label, href }) => (
+            <li key={label}>
+              <a data-href={href} href={href}>
+                <HoverLinks text={label} />
+              </a>
+            </li>
+          ))}
         </ul>
+
+        {/* Hamburger button — mobile only */}
+        <button
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          className="min-[1024px]:hidden ml-auto flex flex-col justify-center items-center gap-[5px] w-10 h-10 z-[10001] relative"
+        >
+          <span className={`block h-[2px] bg-white rounded transition-all duration-300 ${menuOpen ? "w-6 translate-y-[7px] rotate-45" : "w-6"}`} />
+          <span className={`block h-[2px] bg-white rounded transition-all duration-300 ${menuOpen ? "w-0 opacity-0" : "w-4"}`} />
+          <span className={`block h-[2px] bg-white rounded transition-all duration-300 ${menuOpen ? "w-6 -translate-y-[7px] -rotate-45" : "w-6"}`} />
+        </button>
       </div>
+
+      {/* ── Mobile menu overlay ── */}
+      {menuOpen && (
+        <div
+          ref={overlayRef}
+          className="fixed inset-0 z-[9998] min-[1024px]:hidden flex flex-col items-center justify-center"
+          style={{ background: "rgba(5, 8, 16, 0.97)", backdropFilter: "blur(12px)" }}
+        >
+          <nav className="flex flex-col items-center gap-10">
+            {NAV_LINKS.map(({ label, href }) => (
+              <a
+                key={label}
+                data-href={href}
+                href={href}
+                className="text-3xl font-bold tracking-[3px] text-white/80 hover:text-[var(--accentColor)] transition-colors duration-200"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      )}
 
       <div className="landing-circle1" />
       <div className="landing-circle2" />
