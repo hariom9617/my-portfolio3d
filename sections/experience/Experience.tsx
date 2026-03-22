@@ -64,19 +64,30 @@ export default function Career() {
   useEffect(() => {
     if (!timelineRef.current || !lineRef.current) return;
 
-    gsap.fromTo(
-      lineRef.current,
-      { scaleY: 0, transformOrigin: "top center" },
-      {
-        scaleY: 1, ease: "none",
-        scrollTrigger: {
-          trigger: timelineRef.current,
-          start: "top 70%",
-          end: "bottom 80%",
-          scrub: 0.5,
-          invalidateOnRefresh: true,
-        },
-      }
+    // Set initial hidden state via GSAP — NOT via CSS class.
+    // Elements are visible in server-rendered HTML (safe fallback if GSAP fails).
+    const cards = cardRefs.current.filter(Boolean) as Element[];
+    const dots  = dotRefs.current.filter(Boolean) as Element[];
+    gsap.set([...cards, ...dots], { opacity: 0 });
+
+    // Collect every tween this component creates for scoped cleanup.
+    const tweens: gsap.core.Tween[] = [];
+
+    tweens.push(
+      gsap.fromTo(
+        lineRef.current,
+        { scaleY: 0, transformOrigin: "top center" },
+        {
+          scaleY: 1, ease: "none",
+          scrollTrigger: {
+            trigger: timelineRef.current,
+            start: "top 70%",
+            end: "bottom 80%",
+            scrub: 0.5,
+            invalidateOnRefresh: true,
+          },
+        }
+      )
     );
 
     const isMobile = window.innerWidth <= 1024;
@@ -84,62 +95,71 @@ export default function Career() {
     cardRefs.current.forEach((card, i) => {
       if (!card) return;
       const isLeft = entries[i].align === "left";
-      gsap.fromTo(
-        card,
-        { opacity: 0, x: isMobile ? 0 : (isLeft ? -60 : 60) },
-        {
-          opacity: 1, x: 0, duration: 0.8, ease: "power3.out",
-          scrollTrigger: {
-            trigger: card,
-            start: "top 88%",
-            toggleActions: "play none none none",
-          },
-        }
+      tweens.push(
+        gsap.fromTo(
+          card,
+          { opacity: 0, x: isMobile ? 0 : (isLeft ? -60 : 60) },
+          {
+            opacity: 1, x: 0, duration: 0.8, ease: "power3.out",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
       );
     });
 
     dotRefs.current.forEach((dot) => {
       if (!dot) return;
-      gsap.fromTo(
-        dot,
-        { scale: 0, opacity: 0 },
-        {
-          scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)",
-          scrollTrigger: {
-            trigger: dot,
-            start: "top 90%",
-            toggleActions: "play none none none",
-          },
-        }
+      tweens.push(
+        gsap.fromTo(
+          dot,
+          { scale: 0, opacity: 0 },
+          {
+            scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)",
+            scrollTrigger: {
+              trigger: dot,
+              start: "top 90%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
       );
     });
 
-    // Period date labels are hidden on mobile — skip animation to avoid
-    // GSAP touching display:none elements unnecessarily.
+    // Period date labels are hidden on mobile — skip animation.
     if (!isMobile) {
       periodRefs.current.forEach((el, i) => {
         if (!el) return;
+        gsap.set(el, { opacity: 0 });
         const isLeft = entries[i].align === "left";
-        gsap.fromTo(
-          el,
-          { opacity: 0, x: isLeft ? 40 : -40 },
-          {
-            opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
+        tweens.push(
+          gsap.fromTo(
+            el,
+            { opacity: 0, x: isLeft ? 40 : -40 },
+            {
+              opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
+              scrollTrigger: {
+                trigger: el,
+                start: "top 85%",
+                toggleActions: "play none none none",
+                invalidateOnRefresh: true,
+              },
+            }
+          )
         );
       });
     }
 
-    // Only kill the triggers we own — not the GsapScroll timelines.
     return () => {
-      ScrollTrigger.getAll()
-        .filter((t) => !t.vars.id?.toString().startsWith("__"))
-        .forEach((t) => t.kill());
+      tweens.forEach((t) => {
+        t.scrollTrigger?.kill();
+        t.kill();
+      });
     };
   }, []);
 
@@ -287,7 +307,7 @@ export default function Career() {
                   {entry.align === "left" ? (
                     <div
                       ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden opacity-0"
+                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
                     >
                       {/* Lucide icon as watermark */}
                       <div className="absolute top-0 left-0 p-2 opacity-10 text-white">
@@ -311,7 +331,7 @@ export default function Career() {
                   ) : (
                     <div
                       ref={(el) => { periodRefs.current[i] = el; }}
-                      className="hidden md:flex flex-col items-end text-right space-y-2 justify-center opacity-0"
+                      className="hidden md:flex flex-col items-end text-right space-y-2 justify-center"
                     >
                       <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
                       <p className="text-white/40 text-sm max-w-65 font-extralight">{entry.periodNote}</p>
@@ -323,7 +343,7 @@ export default function Career() {
                 <div className="career-dot-wrapper flex flex-col items-center justify-center relative z-20 shrink-0 px-4">
                   <div
                     ref={(el) => { dotRefs.current[i] = el; }}
-                    className="career-dot career-dot-glow opacity-0"
+                    className="career-dot career-dot-glow"
                   />
                 </div>
 
@@ -332,7 +352,7 @@ export default function Career() {
                   {entry.align === "right" ? (
                     <div
                       ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden opacity-0"
+                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 p-2 opacity-10 text-white">
                         {entry.icon}
@@ -355,7 +375,7 @@ export default function Career() {
                   ) : (
                     <div
                       ref={(el) => { periodRefs.current[i] = el; }}
-                      className="hidden md:flex flex-col items-start space-y-2 justify-center opacity-0"
+                      className="hidden md:flex flex-col items-start space-y-2 justify-center"
                     >
                       <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
                       <p className="text-white/40 text-sm max-w-65 font-extralight">{entry.periodNote}</p>
