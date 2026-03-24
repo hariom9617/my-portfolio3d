@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, type Easing } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Code, Database, Monitor, Server, Cloud, Wrench, Zap } from "lucide-react";
@@ -88,14 +89,32 @@ const categories: SkillCategory[] = [
   },
 ];
 
+// Framer Motion fade-in preset used on mobile
+const fm = (delay = 0) => ({
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 } as const,
+  viewport: { once: true, margin: "-40px" },
+  transition: { duration: 0.5, ease: "easeOut" as Easing, delay },
+});
+
 export default function Skills() {
+  // null = not yet detected (SSR-safe). GSAP only runs once isMobile=false.
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
   const headerRef    = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cardRefs     = useRef<(HTMLDivElement | null)[][]>([]);
 
+  // Detect mobile once on the client
   useEffect(() => {
-    // Set initial hidden state via GSAP — NOT via CSS class.
-    // If GSAP fails for any reason the elements stay visible (safe fallback).
+    setIsMobile(window.innerWidth <= 1024);
+  }, []);
+
+  // Desktop-only: GSAP ScrollTrigger animations.
+  // Waits for isMobile to be resolved (not null) so GSAP never runs on mobile.
+  useEffect(() => {
+    if (isMobile !== false) return; // null (unknown) or true (mobile) → skip
+
     const allTargets: (Element | null)[] = [
       headerRef.current,
       ...categoryRefs.current,
@@ -103,7 +122,6 @@ export default function Skills() {
     ];
     allTargets.forEach((el) => el && gsap.set(el, { opacity: 0 }));
 
-    // Collect every ScrollTrigger this component creates so cleanup is scoped.
     const tweens: gsap.core.Tween[] = [];
 
     if (headerRef.current) {
@@ -171,7 +189,7 @@ export default function Skills() {
         t.kill();
       });
     };
-  }, []);
+  }, [isMobile]);
 
   return (
     <>
@@ -198,9 +216,10 @@ export default function Skills() {
         "
       >
         {/* ── Header ── */}
-        <div
+        <motion.div
           ref={headerRef}
           className="flex flex-col items-center mb-16 text-center"
+          {...(isMobile ? fm() : {})}
         >
           <div className="
             inline-flex items-center gap-2 px-3 py-1 rounded-full
@@ -223,7 +242,7 @@ export default function Skills() {
             A curated selection of modern technologies and frameworks I use to
             bring complex digital visions to life.
           </p>
-        </div>
+        </motion.div>
 
         {/* ── Categories grid ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -233,21 +252,23 @@ export default function Skills() {
               <div key={cat.label} className="space-y-4">
 
                 {/* Category heading */}
-                <div
-                  ref={(el) => { categoryRefs.current[catIdx] = el; }}
+                <motion.div
+                  ref={(el: HTMLDivElement | null) => { categoryRefs.current[catIdx] = el; }}
                   className="flex items-center gap-3 px-2"
+                  {...(isMobile ? fm(catIdx * 0.06) : {})}
                 >
                   <span className="text-(--accentColor)">{cat.icon}</span>
                   <h3 className="text-[18px] font-semibold tracking-[1px]">{cat.label}</h3>
-                </div>
+                </motion.div>
 
                 {/* Skill cards */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                   {cat.items.map((skill, skillIdx) => (
-                    <div
+                    <motion.div
                       key={skill.name}
-                      ref={(el) => { cardRefs.current[catIdx][skillIdx] = el; }}
+                      ref={(el: HTMLDivElement | null) => { cardRefs.current[catIdx][skillIdx] = el; }}
                       className="glass-card rounded-xl p-4 flex flex-col items-center justify-center gap-3 text-center"
+                      {...(isMobile ? fm(skillIdx * 0.07) : {})}
                     >
                       <div className="w-12 h-12 mb-2 flex items-center justify-center rounded-lg bg-black/50 p-2">
                         <img
@@ -259,7 +280,7 @@ export default function Skills() {
                       <span className="text-[13px] font-semibold tracking-[0.5px]">
                         {skill.name}
                       </span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 

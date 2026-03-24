@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, type Easing } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Rocket, Layers, Database } from "lucide-react";
@@ -54,25 +55,62 @@ const entries: CareerEntry[] = [
   },
 ];
 
+// Framer Motion fade-in preset used on mobile
+const fm = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 } as const,
+  viewport: { once: true, margin: "-40px" },
+  transition: { duration: 0.55, ease: "easeOut" as Easing, delay },
+});
+
+// Card inner content — shared between mobile (motion.div) and desktop (div with ref)
+function CardContent({ entry }: { entry: CareerEntry }) {
+  return (
+    <>
+      <div className="space-y-3">
+        <div className="flex gap-2 flex-wrap">
+          {entry.tags.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">
+              {tag}
+            </span>
+          ))}
+        </div>
+        <p className="text-white/60 text-sm leading-relaxed font-extralight">
+          {entry.description}
+        </p>
+      </div>
+    </>
+  );
+}
+
 export default function Career() {
+  // null = not yet detected (SSR-safe). GSAP only runs once isMobile=false.
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
   const timelineRef = useRef<HTMLDivElement>(null);
   const lineRef     = useRef<HTMLDivElement>(null);
   const cardRefs    = useRef<(HTMLDivElement | null)[]>([]);
   const dotRefs     = useRef<(HTMLDivElement | null)[]>([]);
   const periodRefs  = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Detect mobile once on the client
   useEffect(() => {
+    setIsMobile(window.innerWidth <= 1024);
+  }, []);
+
+  // Desktop-only: GSAP ScrollTrigger animations.
+  // Waits for isMobile to be resolved (not null) so GSAP never runs on mobile.
+  useEffect(() => {
+    if (isMobile !== false) return; // null (unknown) or true (mobile) → skip
     if (!timelineRef.current || !lineRef.current) return;
 
-    // Set initial hidden state via GSAP — NOT via CSS class.
-    // Elements are visible in server-rendered HTML (safe fallback if GSAP fails).
     const cards = cardRefs.current.filter(Boolean) as Element[];
     const dots  = dotRefs.current.filter(Boolean) as Element[];
     gsap.set([...cards, ...dots], { opacity: 0 });
 
-    // Collect every tween this component creates for scoped cleanup.
     const tweens: gsap.core.Tween[] = [];
 
+    // Decorative timeline line draws in via scrub (desktop only, not content)
     tweens.push(
       gsap.fromTo(
         lineRef.current,
@@ -90,15 +128,13 @@ export default function Career() {
       )
     );
 
-    const isMobile = window.innerWidth <= 1024;
-
     cardRefs.current.forEach((card, i) => {
       if (!card) return;
       const isLeft = entries[i].align === "left";
       tweens.push(
         gsap.fromTo(
           card,
-          { opacity: 0, x: isMobile ? 0 : (isLeft ? -60 : 60) },
+          { opacity: 0, x: isLeft ? -60 : 60 },
           {
             opacity: 1, x: 0, duration: 0.8, ease: "power3.out",
             scrollTrigger: {
@@ -131,29 +167,26 @@ export default function Career() {
       );
     });
 
-    // Period date labels are hidden on mobile — skip animation.
-    if (!isMobile) {
-      periodRefs.current.forEach((el, i) => {
-        if (!el) return;
-        gsap.set(el, { opacity: 0 });
-        const isLeft = entries[i].align === "left";
-        tweens.push(
-          gsap.fromTo(
-            el,
-            { opacity: 0, x: isLeft ? 40 : -40 },
-            {
-              opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
-              scrollTrigger: {
-                trigger: el,
-                start: "top 85%",
-                toggleActions: "play none none none",
-                invalidateOnRefresh: true,
-              },
-            }
-          )
-        );
-      });
-    }
+    periodRefs.current.forEach((el, i) => {
+      if (!el) return;
+      gsap.set(el, { opacity: 0 });
+      const isLeft = entries[i].align === "left";
+      tweens.push(
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: isLeft ? 40 : -40 },
+          {
+            opacity: 1, x: 0, duration: 0.6, ease: "power2.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              toggleActions: "play none none none",
+              invalidateOnRefresh: true,
+            },
+          }
+        )
+      );
+    });
 
     return () => {
       tweens.forEach((t) => {
@@ -161,7 +194,7 @@ export default function Career() {
         t.kill();
       });
     };
-  }, []);
+  }, [isMobile]);
 
   return (
     <>
@@ -205,13 +238,6 @@ export default function Career() {
           border-color: rgba(13, 204, 242, 0.6);
           box-shadow: 0 0 20px rgba(13, 204, 242, 0.15);
         }
-        .career-h2-gradient {
-          background: linear-gradient(0deg, #0d9488, #ffffff);
-          background-clip: text;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          color: transparent;
-        }
         .career-dot-pulse {
           position: absolute;
           bottom: 0; left: 50%;
@@ -231,7 +257,6 @@ export default function Career() {
         @media only screen and (max-width: 900px) {
           .career-timeline-line { left: 20px; }
           .career-dot-pulse { left: 20px; }
-          /* Stack all entries left-anchored: dot on the left, card to the right */
           .career-info-box { padding-left: 52px; }
           .career-dot-wrapper {
             position: absolute;
@@ -252,8 +277,6 @@ export default function Career() {
 
           {/* ── Header ── */}
           <div className="max-w-7xl mx-auto px-6 pb-16 text-center relative z-10">
-
-            {/* Badge */}
             <span className="
               inline-block px-4 py-1.5 mb-6
               text-xs font-bold tracking-[0.2em] uppercase
@@ -263,7 +286,6 @@ export default function Career() {
               Professional Timeline
             </span>
 
-            {/* Title */}
             <h2 className="
               text-[70px] leading-17.5 font-black tracking-tighter mb-6
               bg-linear-to-b from-white to-slate-500
@@ -274,7 +296,6 @@ export default function Career() {
               The Journey.
             </h2>
 
-            {/* Subtitle */}
             <p className="
               text-white/40 text-lg max-w-2xl mx-auto
               font-light leading-relaxed tracking-[0.3px]
@@ -282,7 +303,6 @@ export default function Career() {
               A chronicle of building scalable architectures and high-fidelity
               user experiences across the stack.
             </p>
-
           </div>
 
           {/* ── Timeline ── */}
@@ -302,35 +322,50 @@ export default function Career() {
                 key={i}
                 className="career-info-box relative flex flex-col md:flex-row items-stretch md:items-center gap-0"
               >
-                {/* ── LEFT ── (order-2 on mobile so dot always renders first) */}
+                {/* ── LEFT ── */}
                 <div className="flex-1 flex md:justify-end pr-0 md:pr-8 order-2 md:order-0">
                   {entry.align === "left" ? (
-                    <div
-                      ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
-                    >
-                      {/* Lucide icon as watermark */}
-                      <div className="absolute top-0 left-0 p-2 opacity-10 text-white">
-                        {entry.icon}
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-1 md:text-right">{entry.role}</h3>
-                      <p className="text-(--accentColor) font-mono text-sm mb-4 md:text-right">{entry.company}</p>
-                      <div className="space-y-3">
-                        <div className="flex gap-2 flex-wrap md:justify-end">
-                          {entry.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">
-                              {tag}
-                            </span>
-                          ))}
+                    isMobile ? (
+                      // Mobile: Framer Motion fade-in
+                      <motion.div
+                        className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
+                        {...fm(i * 0.1)}
+                      >
+                        <div className="absolute top-0 left-0 p-2 opacity-10 text-white">{entry.icon}</div>
+                        <h3 className="text-xl font-bold text-white mb-1 md:text-right">{entry.role}</h3>
+                        <p className="text-(--accentColor) font-mono text-sm mb-4 md:text-right">{entry.company}</p>
+                        <div className="space-y-3">
+                          <div className="flex gap-2 flex-wrap md:justify-end">
+                            {entry.tags.map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">{tag}</span>
+                            ))}
+                          </div>
+                          <p className="text-white/60 text-sm leading-relaxed font-extralight md:text-right">{entry.description}</p>
                         </div>
-                        <p className="text-white/60 text-sm leading-relaxed font-extralight md:text-right">
-                          {entry.description}
-                        </p>
+                      </motion.div>
+                    ) : (
+                      // Desktop: GSAP via ref
+                      <div
+                        ref={(el: HTMLDivElement | null) => { cardRefs.current[i] = el; }}
+                        className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 left-0 p-2 opacity-10 text-white">{entry.icon}</div>
+                        <h3 className="text-xl font-bold text-white mb-1 md:text-right">{entry.role}</h3>
+                        <p className="text-(--accentColor) font-mono text-sm mb-4 md:text-right">{entry.company}</p>
+                        <div className="space-y-3">
+                          <div className="flex gap-2 flex-wrap md:justify-end">
+                            {entry.tags.map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">{tag}</span>
+                            ))}
+                          </div>
+                          <p className="text-white/60 text-sm leading-relaxed font-extralight md:text-right">{entry.description}</p>
+                        </div>
                       </div>
-                    </div>
+                    )
                   ) : (
+                    // Period label — desktop GSAP ref; hidden on mobile via CSS
                     <div
-                      ref={(el) => { periodRefs.current[i] = el; }}
+                      ref={(el: HTMLDivElement | null) => { periodRefs.current[i] = el; }}
                       className="hidden md:flex flex-col items-end text-right space-y-2 justify-center"
                     >
                       <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
@@ -339,42 +374,65 @@ export default function Career() {
                   )}
                 </div>
 
-                {/* ── DOT — centered on desktop, absolutely-left on mobile ── */}
+                {/* ── DOT ── */}
                 <div className="career-dot-wrapper flex flex-col items-center justify-center relative z-20 shrink-0 px-4">
-                  <div
-                    ref={(el) => { dotRefs.current[i] = el; }}
-                    className="career-dot career-dot-glow"
-                  />
+                  {isMobile ? (
+                    <motion.div
+                      className="career-dot career-dot-glow"
+                      {...fm(i * 0.1 + 0.15)}
+                    />
+                  ) : (
+                    <div
+                      ref={(el: HTMLDivElement | null) => { dotRefs.current[i] = el; }}
+                      className="career-dot career-dot-glow"
+                    />
+                  )}
                 </div>
 
                 {/* ── RIGHT ── */}
                 <div className="flex-1 flex md:justify-start pl-0 md:pl-8">
                   {entry.align === "right" ? (
-                    <div
-                      ref={(el) => { cardRefs.current[i] = el; }}
-                      className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 p-2 opacity-10 text-white">
-                        {entry.icon}
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-1">{entry.role}</h3>
-                      <p className="text-(--accentColor) font-mono text-sm mb-4">{entry.company}</p>
-                      <div className="space-y-3">
-                        <div className="flex gap-2 flex-wrap">
-                          {entry.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">
-                              {tag}
-                            </span>
-                          ))}
+                    isMobile ? (
+                      // Mobile: Framer Motion fade-in
+                      <motion.div
+                        className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
+                        {...fm(i * 0.1)}
+                      >
+                        <div className="absolute top-0 right-0 p-2 opacity-10 text-white">{entry.icon}</div>
+                        <h3 className="text-xl font-bold text-white mb-1">{entry.role}</h3>
+                        <p className="text-(--accentColor) font-mono text-sm mb-4">{entry.company}</p>
+                        <div className="space-y-3">
+                          <div className="flex gap-2 flex-wrap">
+                            {entry.tags.map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">{tag}</span>
+                            ))}
+                          </div>
+                          <p className="text-white/60 text-sm leading-relaxed font-extralight">{entry.description}</p>
                         </div>
-                        <p className="text-white/60 text-sm leading-relaxed font-extralight">
-                          {entry.description}
-                        </p>
+                      </motion.div>
+                    ) : (
+                      // Desktop: GSAP via ref
+                      <div
+                        ref={(el: HTMLDivElement | null) => { cardRefs.current[i] = el; }}
+                        className="career-card w-full md:max-w-110 p-6 rounded-xl relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 p-2 opacity-10 text-white">{entry.icon}</div>
+                        <h3 className="text-xl font-bold text-white mb-1">{entry.role}</h3>
+                        <p className="text-(--accentColor) font-mono text-sm mb-4">{entry.company}</p>
+                        <div className="space-y-3">
+                          <div className="flex gap-2 flex-wrap">
+                            {entry.tags.map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 rounded bg-(--accentColor)/10 text-(--accentColor) text-[10px] font-mono border border-(--accentColor)/20">{tag}</span>
+                            ))}
+                          </div>
+                          <p className="text-white/60 text-sm leading-relaxed font-extralight">{entry.description}</p>
+                        </div>
                       </div>
-                    </div>
+                    )
                   ) : (
+                    // Period label — desktop GSAP ref; hidden on mobile via CSS
                     <div
-                      ref={(el) => { periodRefs.current[i] = el; }}
+                      ref={(el: HTMLDivElement | null) => { periodRefs.current[i] = el; }}
                       className="hidden md:flex flex-col items-start space-y-2 justify-center"
                     >
                       <span className="text-(--accentColor) font-mono font-bold text-xl uppercase">{entry.period}</span>
