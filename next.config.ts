@@ -32,11 +32,38 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { hostname: "cdn.worldvectorlogo.com" },
+      { hostname: "worldvectorlogo.com" },
+    ],
+  },
   async headers() {
     return [
+      // Security headers on all routes
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      // Long-lived cache for immutable static assets
+      {
+        source: "/images/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/models/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
+      },
+      {
+        source: "/videos/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
       },
     ];
   },

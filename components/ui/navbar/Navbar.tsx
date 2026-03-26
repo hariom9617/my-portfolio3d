@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollSmoother } from "gsap/all";
@@ -38,7 +38,7 @@ const Navbar = () => {
     }
   }, [menuOpen]);
 
-  // ScrollSmoother + link click handler
+  // ScrollSmoother setup
   useEffect(() => {
     const smoother = ScrollSmoother.create({
       wrapper: "#smooth-wrapper",
@@ -55,45 +55,35 @@ const Navbar = () => {
     smoother.scrollTop(0);
     smoother.paused(true);
 
-    const handleLinkClick = (e: Event, selector: string) => {
-      e.preventDefault();
-      setMenuOpen(false);
-
-      const section = document.querySelector<HTMLElement>(selector);
-      if (!section) return;
-
-      if (window.innerWidth > 1024) {
-        try {
-          smoother.scrollTo(selector, true, "top top");
-        } catch {
-          section.scrollIntoView({ behavior: "smooth" });
-        }
-      } else {
-        // Slight delay so the overlay close animation doesn't fight the scroll
-        setTimeout(() => {
-          const top = section.getBoundingClientRect().top + window.scrollY;
-          window.scrollTo({ top, behavior: "smooth" });
-        }, 220);
-      }
-    };
-
-    const links = document.querySelectorAll<HTMLAnchorElement>("a[data-href]");
-    const handlers: Array<{ el: HTMLAnchorElement; fn: (e: Event) => void }> = [];
-    links.forEach((el) => {
-      const selector = el.getAttribute("data-href");
-      if (!selector) return;
-      const fn = (e: Event) => handleLinkClick(e, selector);
-      el.addEventListener("click", fn);
-      handlers.push({ el, fn });
-    });
-
     const handleResize = () => ScrollTrigger.refresh();
     window.addEventListener("resize", handleResize);
 
     return () => {
-      handlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
       window.removeEventListener("resize", handleResize);
     };
+  }, []);
+
+  // Scroll to a section — works for both desktop (ScrollSmoother) and mobile
+  const handleNavLinkClick = useCallback((e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    setMenuOpen(false);
+
+    const section = document.querySelector<HTMLElement>(href);
+    if (!section) return;
+
+    if (window.innerWidth > 1024) {
+      try {
+        smootherRef.current?.scrollTo(href, true, "top top");
+      } catch {
+        section.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      // Slight delay so the overlay close animation doesn't fight the scroll
+      setTimeout(() => {
+        const top = section.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top, behavior: "smooth" });
+      }, 220);
+    }
   }, []);
 
   return (
@@ -136,7 +126,7 @@ const Navbar = () => {
         ">
           {NAV_LINKS.map(({ label, href }) => (
             <li key={label}>
-              <a data-href={href} href={href}>
+              <a href={href} onClick={(e) => handleNavLinkClick(e, href)}>
                 <HoverLinks text={label} />
               </a>
             </li>
@@ -166,8 +156,8 @@ const Navbar = () => {
             {NAV_LINKS.map(({ label, href }) => (
               <a
                 key={label}
-                data-href={href}
                 href={href}
+                onClick={(e) => handleNavLinkClick(e, href)}
                 className="text-3xl font-bold tracking-[3px] text-white/80 hover:text-[var(--accentColor)] transition-colors duration-200"
               >
                 {label}

@@ -166,6 +166,13 @@ const TechStack = () => {
     );
   }, []);
 
+  // Dispose materials when this component unmounts to free GPU memory
+  useEffect(() => {
+    return () => {
+      materials.forEach((m) => m.dispose());
+    };
+  }, [materials]);
+
   return (
     <div className="techstack">
       <h2> My Techstack</h2>
