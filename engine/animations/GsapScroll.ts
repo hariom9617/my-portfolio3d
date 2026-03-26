@@ -21,7 +21,10 @@ export function setCharTimeline(
   // created in this call are killed (resize handler calls ScrollTrigger.kill).
   ScrollTrigger.create({
     id: "__intensityCleanup",
-    onKill: () => clearInterval(intensityInterval),
+    onKill: () => {
+      clearInterval(intensityInterval);
+      flickerTimeline?.kill();
+    },
   });
 
   const tl1 = gsap.timeline({
@@ -55,6 +58,7 @@ export function setCharTimeline(
   });
 
   let screenLight: any, monitor: any;
+  let flickerTimeline: gsap.core.Timeline | null = null;
 
   character?.children.forEach((object: any) => {
     if (object.name === "Plane004") {
@@ -71,7 +75,8 @@ export function setCharTimeline(
       object.material.transparent = true;
       object.material.opacity = 0;
       object.material.emissive.set("#B0F5EA");
-      gsap.timeline({ repeat: -1, repeatRefresh: true }).to(object.material, {
+      flickerTimeline = gsap.timeline({ repeat: -1, repeatRefresh: true });
+      flickerTimeline.to(object.material, {
         emissiveIntensity: () => intensity * 8,
         duration: () => Math.random() * 0.6,
         delay: () => Math.random() * 0.1,

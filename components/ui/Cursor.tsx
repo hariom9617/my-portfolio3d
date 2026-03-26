@@ -7,6 +7,9 @@ import gsap from "gsap";
 const Cursor = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // Touch-only devices have no cursor — skip the RAF loop entirely
+    if (window.matchMedia("(hover: none)").matches) return;
+
     let hover = false;
     const cursor = cursorRef.current!;
     const mousePos = { x: 0, y: 0 };

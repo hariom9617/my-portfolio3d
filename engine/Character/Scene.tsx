@@ -178,6 +178,12 @@ const Scene = () => {
       teardown = () => {
         clearTimeout(debounce);
 
+        // Stop all mixer actions before disposal to prevent callbacks on dead objects
+        if (mixer) {
+          mixer.stopAllAction();
+          mixer.uncacheRoot(mixer.getRoot());
+        }
+
         // Dispose all Three.js GPU resources to prevent memory leaks
         scene.traverse((obj) => {
           const mesh = obj as THREE.Mesh;
@@ -191,6 +197,7 @@ const Scene = () => {
           }
         });
         scene.clear();
+        light.dispose();
         renderer.dispose();
 
         // Remove the exact same resize handler reference that was registered

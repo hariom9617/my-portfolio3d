@@ -18,6 +18,7 @@ const setLighting = (scene: THREE.Scene) => {
   pointLight.castShadow = true;
   scene.add(pointLight);
 
+  let envTexture: THREE.Texture | null = null;
   new RGBELoader()
     .setPath("/models/")
     .load("char_enviorment.hdr?v=2", function (texture) {
@@ -25,6 +26,7 @@ const setLighting = (scene: THREE.Scene) => {
       scene.environment = texture;
       scene.environmentIntensity = 0;
       scene.environmentRotation.set(5.76, 85.85, 1);
+      envTexture = texture;
     });
 
   function setPointLight(screenLight: any) {
@@ -55,7 +57,12 @@ const setLighting = (scene: THREE.Scene) => {
     });
   }
 
-  return { setPointLight, turnOnLights };
+  function dispose() {
+    envTexture?.dispose();
+    scene.environment = null;
+  }
+
+  return { setPointLight, turnOnLights, dispose };
 };
 
 export default setLighting;

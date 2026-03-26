@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ArrowRight, ArrowUpRight, Code, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ const projects = [
     category: "Instagram Automation SaaS",
     tools: "React, Node.js, Express, MongoDB, Razorpay",
     image: "/images/replyzen.png",
-    link: "",
+    link: "https://replyzen.hariom-patil.in/",
     video: "",
   },
   {
@@ -18,7 +18,7 @@ const projects = [
     category: "Management System",
     tools: "React, Node.js, MongoDB",
     image: "/images/hotel-management.png",
-    link: "",
+    link: "https://dharamshala-management.hariom-patil.in/",
     video: "",
   },
   {
@@ -26,7 +26,7 @@ const projects = [
     category: "Social Media Platform",
     tools: "React, TypeScript, Node.js, MongoDB, Tailwind",
     image: "/images/prism.png",
-    link: "",
+    link: "https://prism.hariom-patil.in/",
     video: "",
   },
   {
@@ -34,7 +34,7 @@ const projects = [
     category: "E-Commerce Platform",
     tools: "React, Redux, Material UI, MongoDB, Razorpay",
     image: "/images/techbay.png",
-    link: "",
+    link: "https://techbay.hariom-patil.in/",
     video: "",
   },
   {
@@ -42,7 +42,7 @@ const projects = [
     category: "Interactive Portfolio",
     tools: "Next.js, Three.js, GSAP, Framer Motion",
     image: "/images/portfolio3d.png",
-    link: "",
+    link: "https://www.hariom-patil.in/",
     video: "",
   },
   {
@@ -63,7 +63,7 @@ const gridProjects = [
     category: "Instagram Automation SaaS",
     tags: ["React", "Node.js", "Express", "MongoDB", "Razorpay"],
     image: "/images/replyzen.png",
-    link: "",
+    link: "https://replyzen.hariom-patil.in/",
     github: "",
   },
   {
@@ -72,7 +72,7 @@ const gridProjects = [
       "Full-stack social media platform with location-based features and interactive map visualization.",
     tags: ["React", "TypeScript", "MongoDB"],
     image: "/images/prism.png",
-    link: "",
+    link: "https://prism.hariom-patil.in/",
     github: "",
   },
   {
@@ -81,7 +81,7 @@ const gridProjects = [
       "E-commerce platform with product management, cart system, and secure Razorpay payment integration.",
     tags: ["React", "Redux", "MongoDB"],
     image: "/images/techbay.png",
-    link: "",
+    link: "https://techbay.hariom-patil.in/",
     github: "",
   },
   {
@@ -90,7 +90,7 @@ const gridProjects = [
       "System for managing hotel bookings, room availability, and customer data with an admin dashboard.",
     tags: ["React", "Node.js", "MongoDB"],
     image: "/images/hotel-management.png",
-    link: "",
+    link: "https://dharamshala-management.hariom-patil.in/",
     github: "",
   },
   {
@@ -99,7 +99,7 @@ const gridProjects = [
       "Interactive developer portfolio featuring 3D elements, smooth animations, and immersive UI.",
     tags: ["Next.js", "Three.js", "GSAP"],
     image: "/images/portfolio3d.png",
-    link: "",
+    link: "https://www.hariom-patil.in/",
     github: "",
   },
 ];
@@ -107,17 +107,33 @@ const gridProjects = [
 export default function Projects() {
   const [videoSrc, setVideoSrc] = useState("");
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const blobUrlRef = useRef<string>("");
+
+  // Revoke any outstanding blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, []);
 
   const handleMouseEnter = useCallback(async (key: string, video?: string) => {
     if (!video) return;
     const response = await fetch(`/videos/${video}`);
     const blob = await response.blob();
-    setVideoSrc(URL.createObjectURL(blob));
+    // Revoke previous blob URL before creating a new one
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    const url = URL.createObjectURL(blob);
+    blobUrlRef.current = url;
+    setVideoSrc(url);
     setActiveVideo(key);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setActiveVideo(null);
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = "";
+    }
     setVideoSrc("");
   }, []);
 
@@ -346,7 +362,7 @@ export default function Projects() {
 
               {/* ── GitHub + Live Demo buttons ── */}
               <div className="mt-auto flex gap-3">
-                <a
+                {/* <a
                   href={project.github || "#"}
                   target="_blank"
                   rel="noreferrer"
@@ -360,7 +376,7 @@ export default function Projects() {
                 >
                   <Code size={14} />
                   GitHub
-                </a>
+                </a> */}
                 <a
                   href={project.link || "#"}
                   target="_blank"
