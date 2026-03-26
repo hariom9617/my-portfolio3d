@@ -362,7 +362,7 @@ export default function Projects() {
 
               {/* ── GitHub + Live Demo buttons ── */}
               <div className="mt-auto flex gap-3">
-                <a
+                {/* <a
                   href={project.github || "#"}
                   target="_blank"
                   rel="noreferrer"
@@ -376,7 +376,7 @@ export default function Projects() {
                 >
                   <Code size={14} />
                   GitHub
-                </a>
+                </a> */}
                 <a
                   href={project.link || "#"}
                   target="_blank"
