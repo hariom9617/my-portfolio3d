@@ -47,7 +47,7 @@ const About = () => {
            it only activates at the lg breakpoint. */
       >
         {/* Title — muted teal, tight uppercase tracking, lightweight */}
-        <h3
+        <h2
           className="
           title
           text-[13px]
@@ -62,7 +62,7 @@ const About = () => {
         "
         >
           About Me
-        </h3>
+        </h2>
 
         {/* Paragraph — large, bold, white, generous line-height */}
         <p

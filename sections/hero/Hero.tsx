@@ -46,8 +46,8 @@ const Hero = () => {
           width: var(--cWidth);
           max-width: var(--cMaxWidth);
         }
-        .landing-intro h2,
-        .landing-info h3 {
+        .landing-intro .intro-greeting,
+        .landing-info .info-role-prefix {
           color: var(--accentColor);
         }
         .typewriter-cursor {
@@ -65,22 +65,22 @@ const Hero = () => {
           50%       { opacity: 0; }
         }
         @media screen and (min-width: 500px) {
-          .landing-intro h2  { font-size: 18px; }
-          .landing-intro h1  { font-size: 30px; line-height: 30px; }
-          .landing-info h3   { font-size: 18px; }
-          .landing-info-h2   { font-size: 28px; }
+          .landing-intro .intro-greeting { font-size: 18px; }
+          .landing-intro h1              { font-size: 30px; line-height: 30px; }
+          .landing-info .info-role-prefix { font-size: 18px; }
+          .landing-info-title            { font-size: 28px; }
         }
         @media screen and (min-width: 768px) {
-          .landing-intro h2  { font-size: 25px; }
-          .landing-intro h1  { font-size: 40px; line-height: 35px; }
-          .landing-info h3   { font-size: 25px; }
-          .landing-info-h2   { font-size: 38px; }
+          .landing-intro .intro-greeting { font-size: 25px; }
+          .landing-intro h1              { font-size: 40px; line-height: 35px; }
+          .landing-info .info-role-prefix { font-size: 25px; }
+          .landing-info-title            { font-size: 38px; }
         }
         @media screen and (min-width: 1600px) {
-          .landing-intro h2  { font-size: 35px; }
-          .landing-intro h1  { font-size: 60px; line-height: 55px; }
-          .landing-info h3   { font-size: 35px; }
-          .landing-info-h2   { font-size: 55px; }
+          .landing-intro .intro-greeting { font-size: 35px; }
+          .landing-intro h1              { font-size: 60px; line-height: 55px; }
+          .landing-info .info-role-prefix { font-size: 35px; }
+          .landing-info-title            { font-size: 55px; }
         }
 
         /* ── Mobile only: move role text to top-right beside the name ── */
@@ -94,12 +94,10 @@ const Hero = () => {
             text-align: right;
           }
           /* Compact font sizes so both blocks fit side-by-side */
-          .landing-info h3       { font-size: 15px !important; }
-          h2.landing-info-h2     { font-size: 19px !important; width: auto !important; margin-left: 0 !important; }
-          /* Landing.css sets margin-top:-20px on .landing-info h2 — reset it */
-          .landing-info h2       { margin-top: 2px !important; margin-left: 0 !important; }
+          .landing-info .info-role-prefix { font-size: 15px !important; }
+          .landing-info-title             { font-size: 19px !important; width: auto !important; margin-left: 0 !important; margin-top: 2px !important; }
           /* Hide the gradient fade overlay — it obscures text at small sizes */
-          .landing-info-h2::after { display: none !important; }
+          .landing-info-title::after { display: none !important; }
         }
       `}</style>
 
@@ -122,9 +120,9 @@ const Hero = () => {
             lg:top-1/2 lg:left-auto lg:right-[66%] lg:-translate-y-1/2
             xl:right-[70%]
           ">
-            <h2 className="m-0 text-[22px] font-light tracking-[2px]">
+            <p className="intro-greeting m-0 text-[22px] font-light tracking-[2px]">
               Hello! I&apos;m
-            </h2>
+            </p>
             <h1 className="m-0 tracking-[2px] text-[28px] leading-[28px] font-medium font-[Geist,sans-serif]">
               HARIOM
               <br />
@@ -141,18 +139,18 @@ const Hero = () => {
             lg:bottom-auto lg:top-[51%] lg:-translate-y-1/2 lg:translate-x-0 lg:right-auto lg:left-[66%] lg:text-left
             xl:left-[70%]
           ">
-            <h3 className="m-0 text-[22px] tracking-[2px] font-light">
+            <p className="info-role-prefix m-0 text-[22px] tracking-[2px] font-light">
               A Full Stack
-            </h3>
+            </p>
 
-            <h2 className="
-              landing-info-h2
+            <p className="
+              landing-info-title
               m-0 -ml-[5px] text-[30px] font-semibold font-[Geist,sans-serif]
               text-[var(--accentColor)] whitespace-nowrap
             ">
               {displayed}
               <span className="typewriter-cursor" />
-            </h2>
+            </p>
           </div>
 
         </div>
