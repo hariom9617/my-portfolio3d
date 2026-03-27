@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ArrowRight, ArrowUpRight, Code, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 const projects = [
   {
@@ -200,17 +201,20 @@ export default function Projects() {
             <div className="flex flex-col lg:flex-row">
               {/* Image */}
               <div
-                className="lg:w-3/5 relative overflow-hidden h-[300px] lg:h-auto cursor-pointer"
+                className="lg:w-3/5 relative overflow-hidden h-[300px] lg:h-[460px] cursor-pointer"
                 onMouseEnter={() =>
                   handleMouseEnter("featured", featuredProject.video)
                 }
                 onMouseLeave={handleMouseLeave}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
-                <img
+                <Image
                   src={featuredProject.image}
-                  alt={featuredProject.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  alt={`${featuredProject.title} – ${featuredProject.category} built by Hariom Patil`}
+                  fill
+                  priority
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
                 />
                 {activeVideo === "featured" && (
                   <video
@@ -316,10 +320,13 @@ export default function Projects() {
                   onMouseLeave={handleMouseLeave}
                 >
                   <div className="relative w-full h-full">
-                    <img
+                    <Image
                       src={project.image}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      alt={`${project.title} – ${project.description || project.tags.join(", ")} project by Hariom Patil`}
+                      fill
+                      loading="lazy"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                     {activeVideo === `grid-${i}` && (
                       <video

@@ -47,7 +47,7 @@ const About = () => {
            it only activates at the lg breakpoint. */
       >
         {/* Title — muted teal, tight uppercase tracking, lightweight */}
-        <h3
+        <h2
           className="
           title
           text-[13px]
@@ -62,7 +62,7 @@ const About = () => {
         "
         >
           About Me
-        </h3>
+        </h2>
 
         {/* Paragraph — large, bold, white, generous line-height */}
         <p
@@ -88,6 +88,13 @@ const About = () => {
           real-world products that combine clean UI, scalable backend systems,
           and smooth user experiences, ranging from e-commerce platforms and
           SaaS automation tools to interactive 3D web applications.
+        </p>
+
+        {/* SEO-only line — visually hidden */}
+        <p className="sr-only">
+          Hariom Patil is a MERN Stack Developer specializing in React.js and
+          Node.js, with a strong foundation in full-stack JavaScript development,
+          cloud deployment, and building high-performance web applications.
         </p>
       </div>
     </div>
