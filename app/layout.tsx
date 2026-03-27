@@ -128,15 +128,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
+      <body>
+        {/* JSON-LD in body — Next.js App Router recommended pattern (avoids
+            hydration mismatch caused by browser extensions injecting into <head>) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify([personSchema, websiteSchema]),
           }}
         />
-      </head>
-      <body>
         <Cursor />
         <LoadingProvider>
           <CharacterCanvas />

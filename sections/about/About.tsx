@@ -89,6 +89,13 @@ const About = () => {
           and smooth user experiences, ranging from e-commerce platforms and
           SaaS automation tools to interactive 3D web applications.
         </p>
+
+        {/* SEO-only line — visually hidden */}
+        <p className="sr-only">
+          Hariom Patil is a MERN Stack Developer specializing in React.js and
+          Node.js, with a strong foundation in full-stack JavaScript development,
+          cloud deployment, and building high-performance web applications.
+        </p>
       </div>
     </div>
   );
