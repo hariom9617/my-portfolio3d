@@ -69,6 +69,11 @@ export const metadata: Metadata = {
       "MERN Stack Developer building scalable web apps, SaaS tools & 3D experiences. React · Next.js · Node.js · MongoDB.",
     images: ["/og-image.jpg"],
   },
+  icons: {
+    icon: "/images/logo.png",
+    shortcut: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
 };
 
 const personSchema = {
